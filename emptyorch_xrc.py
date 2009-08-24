@@ -16,8 +16,8 @@ def get_resources():
 
 
 
-class xrcomfgmusic_frame(wx.Frame):
-#!XRCED:begin-block:xrcomfgmusic_frame.PreCreate
+class xrcemptyorch_frame(wx.Frame):
+#!XRCED:begin-block:xrcemptyorch_frame.PreCreate
     def PreCreate(self, pre):
         """ This function is called during the class's initialization.
         
@@ -26,13 +26,13 @@ class xrcomfgmusic_frame(wx.Frame):
         """
         pass
         
-#!XRCED:end-block:xrcomfgmusic_frame.PreCreate
+#!XRCED:end-block:xrcemptyorch_frame.PreCreate
 
     def __init__(self, parent):
         # Two stage creation (see http://wiki.wxpython.org/index.cgi/TwoStageCreation)
         pre = wx.PreFrame()
         self.PreCreate(pre)
-        get_resources().LoadOnFrame(pre, parent, "omfgmusic_frame")
+        get_resources().LoadOnFrame(pre, parent, "emptyorch_frame")
         self.PostCreate(pre)
 
         # Define variables for the controls, bind event handlers
@@ -51,83 +51,83 @@ class xrcomfgmusic_frame(wx.Frame):
         self.Bind(wx.EVT_SCROLL, self.OnScroll_volume_sl, id=xrc.XRCID('volume_sl'))
         self.Bind(wx.EVT_SCROLL, self.OnScroll_volume_sl, id=xrc.XRCID('volume_sl'))
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnMenu_open_menu
+#!XRCED:begin-block:xrcemptyorch_frame.OnMenu_open_menu
     def OnMenu_open_menu(self, evt):
         # Replace with event handler code
         print "OnMenu_open_menu()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnMenu_open_menu        
+#!XRCED:end-block:xrcemptyorch_frame.OnMenu_open_menu        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_choose_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_choose_btn
     def OnButton_choose_btn(self, evt):
         # Replace with event handler code
         print "OnButton_choose_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_choose_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_choose_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_playsel_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_playsel_btn
     def OnButton_playsel_btn(self, evt):
         # Replace with event handler code
         print "OnButton_playsel_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_playsel_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_playsel_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_addplay_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_addplay_btn
     def OnButton_addplay_btn(self, evt):
         # Replace with event handler code
         print "OnButton_addplay_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_addplay_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_addplay_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnScroll_slider
+#!XRCED:begin-block:xrcemptyorch_frame.OnScroll_slider
     def OnScroll_slider(self, evt):
         # Replace with event handler code
         print "OnScroll_slider()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnScroll_slider        
+#!XRCED:end-block:xrcemptyorch_frame.OnScroll_slider        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnScroll_slider
+#!XRCED:begin-block:xrcemptyorch_frame.OnScroll_slider
     def OnScroll_slider(self, evt):
         # Replace with event handler code
         print "OnScroll_slider()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnScroll_slider        
+#!XRCED:end-block:xrcemptyorch_frame.OnScroll_slider        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_prev_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_prev_btn
     def OnButton_prev_btn(self, evt):
         # Replace with event handler code
         print "OnButton_prev_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_prev_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_prev_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_play_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_play_btn
     def OnButton_play_btn(self, evt):
         # Replace with event handler code
         print "OnButton_play_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_play_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_play_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_pause_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_pause_btn
     def OnButton_pause_btn(self, evt):
         # Replace with event handler code
         print "OnButton_pause_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_pause_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_pause_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_stop_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_stop_btn
     def OnButton_stop_btn(self, evt):
         # Replace with event handler code
         print "OnButton_stop_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_stop_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_stop_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnButton_next_btn
+#!XRCED:begin-block:xrcemptyorch_frame.OnButton_next_btn
     def OnButton_next_btn(self, evt):
         # Replace with event handler code
         print "OnButton_next_btn()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnButton_next_btn        
+#!XRCED:end-block:xrcemptyorch_frame.OnButton_next_btn        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnScroll_volume_sl
+#!XRCED:begin-block:xrcemptyorch_frame.OnScroll_volume_sl
     def OnScroll_volume_sl(self, evt):
         # Replace with event handler code
         print "OnScroll_volume_sl()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnScroll_volume_sl        
+#!XRCED:end-block:xrcemptyorch_frame.OnScroll_volume_sl        
 
-#!XRCED:begin-block:xrcomfgmusic_frame.OnScroll_volume_sl
+#!XRCED:begin-block:xrcemptyorch_frame.OnScroll_volume_sl
     def OnScroll_volume_sl(self, evt):
         # Replace with event handler code
         print "OnScroll_volume_sl()"
-#!XRCED:end-block:xrcomfgmusic_frame.OnScroll_volume_sl        
+#!XRCED:end-block:xrcemptyorch_frame.OnScroll_volume_sl        
 
 
 
@@ -138,4 +138,4 @@ def __init_resources():
     global __res
     __res = xrc.EmptyXmlResource()
 
-    __res.Load('omfgmusic.xrc')
+    __res.Load('emptyorch.xrc')

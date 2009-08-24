@@ -14,7 +14,9 @@ from mutagen.oggvorbis import OggVorbis
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3NoHeaderError
 
-import omfgmusic_xrc
+import emptyorch_xrc
+
+from pycdg import cdgPlayer
 
 ########################################
 ###   Figure out the app directory and
@@ -166,21 +168,21 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         print "Updated data."
 
 
-#class omfgmusic_frame(omfgmusic_xrc.xrcomfgmusic_frame):
 class MyApp(wx.App):
 
+    kar_exts = ('.cdg', '.kar')
     media_exts = ('.mp3','.ogg', '.avi', '.mpg')
     songdata = []
 
     def OnInit(self):
         # Get the XRC Resource
-        self.res = xrc.XmlResource(os.path.join(APPDIR, 'omfgmusic.xrc'))
+        self.res = xrc.XmlResource(os.path.join(APPDIR, 'emptyorch.xrc'))
         self.init_frame()
         return True
 
     def init_frame(self):
         # Get stuff from the XRC
-        self.frm = self.res.LoadFrame(None, 'omfgmusic_frame') 
+        self.frm = self.res.LoadFrame(None, 'emptyorch_frame') 
         
         self.media_panel = xrc.XRCCTRL(self.frm, 'media_panel')
         self.slider = xrc.XRCCTRL(self.frm, 'slider')
@@ -234,15 +236,18 @@ class MyApp(wx.App):
         
     def doLoadFile(self, path):
         print "Load File:", path
-        if not self.mc.Load(path):
-            wx.MessageBox("Unable to load %s: Unsupported format?" % path, "ERROR", wx.ICON_ERROR | wx.OK)
-        else:
-            folder, filename = os.path.split(path)
-            self.st_file.SetLabel('%s' % filename)
-            self.mc.SetBestFittingSize()
-            self.frm.GetSizer().Layout()
-            self.slider.SetRange(0, self.mc.Length())
-            self.mc.Play()
+        player = cdgPlayer(path)
+        player.Play()
+        player.WaitForPlayer()
+        #if not self.mc.Load(path):
+        #    wx.MessageBox("Unable to load %s: Unsupported format?" % path, "ERROR", wx.ICON_ERROR | wx.OK)
+        #else:
+        #    folder, filename = os.path.split(path)
+        #    self.st_file.SetLabel('%s' % filename)
+        #    self.mc.SetBestFittingSize()
+        #    self.frm.GetSizer().Layout()
+        #    self.slider.SetRange(0, self.mc.Length())
+        #    self.mc.Play()
     
 
     def OnButton_addplay_btn(self, evt):
@@ -381,6 +386,36 @@ class MyApp(wx.App):
         print "VOLUME:", volume
         self.mc.SetVolume(volume)
 
+    def appendSong(self, filepath, songlist):
+        name, ext = os.path.splitext(filepath)
+        for ext in self.media_exts:
+            if os.path.isfile("%s%s" % (name, ext)):
+                if ext == '.mp3':
+                    try:
+                        eid = EasyID3(filepath)
+                        songlist.append([
+                            eid.get('artist',[''])[0],
+                            eid.get('title',[''])[0],
+                            eid.get('genre',[''])[0],
+                            'mp3+cdg',
+                            filepath
+                        ])
+                    except ID3NoHeaderError:
+                        print "No ID Header for", filepath
+                        songlist.append(['','','','mp3+cdg',filepath])
+                elif ext == '.ogg':
+                    audio = OggVorbis(filepath)
+                    songlist.append([
+                        audio.get('artist',[''])[0],
+                        audio.get('title',[''])[0],
+                        audio.get('genre',[''])[0],
+                        'ogg+cdg',
+                        filepath
+                    ])
+                else:
+                    songlist.append(['','','',ext,filepath])
+                
+
     def OnButton_choose_btn(self, evt):
         path = self.file_tree.GetPath()
         if os.path.isfile(path):
@@ -393,33 +428,10 @@ class MyApp(wx.App):
                 for file in files:
                     name, ext = os.path.splitext(file)
                     #print "(%s, %s)" % (name, ext)
-                    if ext in self.media_exts:
+                    if ext in self.kar_exts:
                         filepath = os.path.join(root, file)
-                        if ext == '.mp3':
-                            try:
-                                eid = EasyID3(filepath)
-                                data.append([
-                                    eid.get('artist',[''])[0],
-                                    eid.get('title',[''])[0],
-                                    eid.get('genre',[''])[0],
-                                    'mp3',
-                                    filepath
-                                ])
-                            except ID3NoHeaderError:
-                                print "No ID Header for", filepath
-                                data.append(['','','','mp3',filepath])
-                        elif ext == '.ogg':
-                            audio = OggVorbis(filepath)
-                            data.append([
-                                audio.get('artist',[''])[0],
-                                audio.get('title',[''])[0],
-                                audio.get('genre',[''])[0],
-                                'ogg',
-                                filepath
-                            ])
-                        else:
-                            data.append(['','','',ext,filepath])
-                                
+                        self.appendSong(filepath, data)
+
             self.fill_list(data)
             print "Done scanning."
     
