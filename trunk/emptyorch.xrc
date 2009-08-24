@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <resource>
-  <object class="wxFrame" name="omfgmusic_frame">
-    <object class="wxMenuBar" name="omfg_menu">
+  <object class="wxFrame" name="emptyorch_frame">
+    <object class="wxMenuBar" name="emptyorch_menu">
       <object class="wxMenu">
         <object class="wxMenuItem" name="open_menu">
           <label>Open</label>
@@ -65,7 +65,7 @@
                 <flag>wxEXPAND|wxGROW</flag>
               </object>
               <object class="sizeritem">
-                <object class="wxListCtrl" name="queue_list" subclass="omfgmusic.SortVirtList">
+                <object class="wxListCtrl" name="queue_list" subclass="emptyorch.SortVirtList">
                   <bg>#E5E5E5</bg>
                   <style>wxLC_REPORT|wxLC_NO_HEADER|wxLC_VIRTUAL|wxLC_NO_SORT_HEADER</style>
                   <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
@@ -79,7 +79,7 @@
             <object class="wxBoxSizer">
               <orient>wxVERTICAL</orient>
               <object class="sizeritem">
-                <object class="wxListCtrl" name="media_list" subclass="omfgmusic.EditMediaList">
+                <object class="wxListCtrl" name="media_list" subclass="emptyorch.EditMediaList">
                   <bg>#E6E6FA</bg>
                   <style>wxLC_REPORT|wxLC_SORT_ASCENDING|wxLC_VIRTUAL</style>
                 </object>
@@ -224,7 +224,7 @@
       <growablerows>3</growablerows>
     </object>
     <size>1000</size>
-    <title>Match_Music</title>
+    <title>Empty Orchestra</title>
     <centered>1</centered>
   </object>
 </resource>
