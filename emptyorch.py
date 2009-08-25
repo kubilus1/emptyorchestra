@@ -51,6 +51,31 @@ class SortVirtList(
         listmix.ListCtrlAutoWidthMixin.__init__(self)
         listmix.ColumnSorterMixin.__init__(self, 20)
 
+    def SearchData(self, term):
+        index = -1
+        searchData = {}
+        for row in self.rows:
+            found = False
+            for col in row:
+                if term.lower() in col.lower():
+                    found = True
+                    break
+            if found:
+                index += 1
+                searchData[index] = row
+        self.itemDataMap = searchData
+        self.itemIndexMap = self.itemDataMap.keys()
+        self.SetItemCount(len(self.itemDataMap))
+
+    def ClearSearch(self):
+        self.itemDataMap = {}
+
+        for i in range(0, len(self.rows)):
+            self.itemDataMap[i] = self.rows[i]
+
+        self.itemIndexMap = self.itemDataMap.keys()
+        self.SetItemCount(len(self.itemDataMap))
+
     def SetData(self, headers, rows):
         self.ClearAll()
         self.headers = headers
@@ -334,9 +359,12 @@ class MyApp(wx.App):
 
     def OnDoSearch(self, evt):
         print "Searching for: %s" % self.search.GetValue()
+        #print self.media_list.FindItem(-1, self.search.GetValue())
+        self.media_list.SearchData(self.search.GetValue())
 
     def OnSearchCancel(self, evt):
         print "Cancel search"
+        self.media_list.ClearSearch()
 
     def OnMenu_open_menu(self, evt):
         dlg = wx.FileDialog(self.frm, message="Choose a media file",
