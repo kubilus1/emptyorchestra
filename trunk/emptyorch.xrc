@@ -88,7 +88,6 @@
               </object>
               <object class="sizeritem">
                 <object class="wxBoxSizer">
-                  <orient>wxHORIZONTAL</orient>
                   <object class="sizeritem">
                     <object class="wxButton" name="playsel_btn">
                       <label>Play Selected</label>
@@ -105,7 +104,15 @@
                       </XRCED>
                     </object>
                   </object>
+                  <orient>wxHORIZONTAL</orient>
+                  <object class="sizeritem">
+                    <object class="unknown" name="searcher_ctrl"/>
+                    <option>2</option>
+                    <flag>wxALL|wxEXPAND</flag>
+                    <border>2</border>
+                  </object>
                 </object>
+                <flag>wxEXPAND</flag>
               </object>
             </object>
           </object>
