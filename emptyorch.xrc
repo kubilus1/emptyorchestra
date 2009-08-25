@@ -206,6 +206,12 @@
               <flag>wxTOP|wxBOTTOM|wxEXPAND|wxGROW</flag>
               <border>10</border>
             </object>
+            
+            <object class="sizeritem">
+              <object class="wxPanel" name="Playlist_panel"/>
+              <option>1</option>
+              <flag>wxEXPAND</flag>
+            </object>
           </object>
           <size>100</size>
           <bg>#ADD8E6</bg>
