@@ -279,6 +279,11 @@ class MyApp(wx.App):
         self.media_list = xrc.XRCCTRL(self.frm, 'media_list')
         self.queue_list = xrc.XRCCTRL(self.frm, 'queue_list')
 
+        # Attach an unknown wxSearchCtrl
+        self.search = wx.SearchCtrl(self.frm, -1, "", style=wx.TE_PROCESS_ENTER)
+        self.search.ShowCancelButton(True)
+        self.res.AttachUnknownControl("searcher_ctrl", self.search)
+
         self.Bind(wx.EVT_MENU, self.OnMenu_open_menu, id=xrc.XRCID('open_menu'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_choose_btn, id=xrc.XRCID('choose_btn'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_playsel_btn, id=xrc.XRCID('playsel_btn'))
@@ -290,6 +295,9 @@ class MyApp(wx.App):
         self.Bind(wx.EVT_BUTTON, self.OnButton_stop_btn, id=xrc.XRCID('stop_btn'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_next_btn, id=xrc.XRCID('next_btn'))
         self.Bind(wx.EVT_SCROLL, self.OnScroll_volume_sl, id=xrc.XRCID('volume_sl'))
+        self.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnDoSearch, self.search)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnDoSearch, self.search)
+        self.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self.OnSearchCancel, self.search)
 
         # Add some special controls
         try:
@@ -303,7 +311,7 @@ class MyApp(wx.App):
         self.st_size = wx.StaticText(self.frm, 0, size=(100,-1))
         self.st_len  = wx.StaticText(self.frm, -1, size=(100,-1))
         self.st_pos  = wx.StaticText(self.frm, -1, size=(100,-1))
-   
+    
         # Setup the Playlist
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.playlist = Playlist_list(
@@ -323,6 +331,12 @@ class MyApp(wx.App):
 
         self.media_list.LoadData('.musicdata')
         self.frm.Show()
+
+    def OnDoSearch(self, evt):
+        print "Searching for: %s" % self.search.GetValue()
+
+    def OnSearchCancel(self, evt):
+        print "Cancel search"
 
     def OnMenu_open_menu(self, evt):
         dlg = wx.FileDialog(self.frm, message="Choose a media file",
