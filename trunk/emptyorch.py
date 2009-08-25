@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+import threading
 
 import wx
 import wx.media
@@ -17,6 +18,7 @@ from mutagen.id3 import ID3NoHeaderError
 import emptyorch_xrc
 
 from pycdg import cdgPlayer
+from pykconstants import *
 
 ########################################
 ###   Figure out the app directory and
@@ -173,6 +175,8 @@ class MyApp(wx.App):
     kar_exts = ('.cdg', '.kar')
     media_exts = ('.mp3','.ogg', '.avi', '.mpg')
     songdata = []
+    player = None
+    playthread = None
 
     def OnInit(self):
         # Get the XRC Resource
@@ -236,9 +240,18 @@ class MyApp(wx.App):
         
     def doLoadFile(self, path):
         print "Load File:", path
-        player = cdgPlayer(path)
-        player.Play()
-        player.WaitForPlayer()
+        if self.playthread:
+            self.player.shutdown()
+            print "Joining playthread"
+            self.playthread.join()
+            print "Playthread joined"
+        self.player = cdgPlayer(path)
+        self.player.Play()
+        self.playthread = threading.Thread(target=self.player.WaitForPlayer)
+        print "Starting playthread"
+        self.playthread.start()
+        print "Playthread started"
+        #self.player.WaitForPlayer()
         #if not self.mc.Load(path):
         #    wx.MessageBox("Unable to load %s: Unsupported format?" % path, "ERROR", wx.ICON_ERROR | wx.OK)
         #else:
@@ -299,6 +312,15 @@ class MyApp(wx.App):
                 wx.LIST_STATE_SELECTED
         )
 
+    def loadCurItem(self):
+        index = -1
+        index = self.queue_list.GetNextItem(
+            index,
+            state=wx.LIST_STATE_SELECTED
+        )
+        path = self.queue_list.GetItem(index, 4).GetText()
+        self.doLoadFile(path)
+
     def loadNextItem(self):
         index = -1
         numItems = self.queue_list.GetItemCount()
@@ -355,13 +377,17 @@ class MyApp(wx.App):
         self.loadNextItem()
 
     def OnButton_play_btn(self, evt):
-        self.mc.Play()
+        if not self.player:
+            self.loadCurItem()
+        else:
+            self.player.shutdown()
+            self.loadCurItem()
 
     def OnButton_pause_btn(self, evt):
-        self.mc.Pause()
+        self.player.Pause()
 
     def OnButton_stop_btn(self, evt):
-        self.mc.Stop()
+        self.player.shutdown()
 
     def OnButton_prev_btn(self, evt):
         self.loadPrevItem()
