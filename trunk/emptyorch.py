@@ -169,6 +169,88 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         m.save()
         print "Updated data."
 
+class Playlist_list(gizmos.EditableListBox):
+#class Playlist_list(wx.ListCtrl):
+    def __init__(self, *args, **kwds):
+        gizmos.EditableListBox.__init__(self, *args, **kwds)
+
+    def SetData(self, headers, rows):
+        self.ClearAll()
+        self.headers = headers
+        self.rows.extend(rows)
+
+        for i in range(len(headers)):
+            self.InsertColumn(i, headers[i])
+            self.SetColumnWidth(i, wx.LIST_AUTOSIZE)
+        
+        start = len(self.itemDataMap) - 1
+        end = start + len(rows)
+        for i in range(start, end):
+            self.itemDataMap[i] = self.rows[i]
+
+        self.itemIndexMap = self.itemDataMap.keys()
+        self.SetItemCount(len(self.itemDataMap))
+
+    def addToList(self, artist, title, filename):
+        strings = self.GetStrings()
+        strings.append("%s  |  %s  |  %s" % (artist, title, filename))
+        self.SetStrings(strings)
+
+    def getCurrent(self):
+        index = -1
+        playlistCtrl = self.GetListCtrl()
+        index = playlistCtrl.GetNextItem(
+            index,
+            state=wx.LIST_STATE_SELECTED
+        )
+        data = playlistCtrl.GetItem(index).GetText()
+        print "Got: ", data
+        return data.split("  |  ")
+    
+    def selectNext(self):
+        index = -1
+        playlistCtrl = self.GetListCtrl()
+        numItems = playlistCtrl.GetItemCount()
+        index = playlistCtrl.GetNextItem(
+            index,
+            state=wx.LIST_STATE_SELECTED
+        )
+        next = (index + 1) % numItems
+        playlistCtrl.SetItemState(
+                index, 
+                0,
+                wx.LIST_STATE_SELECTED
+        )
+        playlistCtrl.SetItemState(
+                next, 
+                wx.LIST_STATE_SELECTED,
+                wx.LIST_STATE_SELECTED
+        )
+
+    def selectPrev(self):
+        index = -1
+        playlistCtrl = self.GetListCtrl()
+        numItems = playlistCtrl.GetItemCount()
+        index = playlistCtrl.GetNextItem(
+            index,
+            state=wx.LIST_STATE_SELECTED
+        )
+
+        if index > 0:
+            prev = index - 1
+        else:
+            prev = numItems - 1
+
+        playlistCtrl.SetItemState(
+                index, 
+                0,
+                wx.LIST_STATE_SELECTED
+        )
+        playlistCtrl.SetItemState(
+                prev, 
+                wx.LIST_STATE_SELECTED,
+                wx.LIST_STATE_SELECTED
+        )
 
 class MyApp(wx.App):
 
@@ -189,6 +271,7 @@ class MyApp(wx.App):
         self.frm = self.res.LoadFrame(None, 'emptyorch_frame') 
         
         self.media_panel = xrc.XRCCTRL(self.frm, 'media_panel')
+        self.playlist_panel = xrc.XRCCTRL(self.frm, 'Playlist_panel')
         self.slider = xrc.XRCCTRL(self.frm, 'slider')
         self.volume_sl = xrc.XRCCTRL(self.frm, 'volume_sl')
         self.st_file = xrc.XRCCTRL(self.frm, 'st_file')
@@ -220,7 +303,20 @@ class MyApp(wx.App):
         self.st_size = wx.StaticText(self.frm, 0, size=(100,-1))
         self.st_len  = wx.StaticText(self.frm, -1, size=(100,-1))
         self.st_pos  = wx.StaticText(self.frm, -1, size=(100,-1))
-        
+   
+        # Setup the Playlist
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.playlist = Playlist_list(
+            self.playlist_panel,
+            -1,
+            "Song Playlist",
+            (50,50),
+            (250,250),
+            gizmos.EL_ALLOW_DELETE
+        )
+        sizer.Add(self.playlist, 1, wx.EXPAND)
+        self.playlist_panel.SetSizer(sizer)
+
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.onTimer)
         self.timer.Start(100)
@@ -303,6 +399,11 @@ class MyApp(wx.App):
                     self.media_list.GetItem(index, 3).GetText(),
                     self.media_list.GetItem(index, 4).GetText(),
             ))
+            self.playlist.addToList(
+                    self.media_list.GetItem(index, 0).GetText(),
+                    self.media_list.GetItem(index, 1).GetText(),
+                    self.media_list.GetItem(index, 4).GetText(),
+            )
         headers = ['Artist', 'Title', 'Genre', 'Type', 'Path']
         self.queue_list.SetData(headers, queuelist)
         numItems = self.queue_list.GetItemCount()
@@ -313,60 +414,17 @@ class MyApp(wx.App):
         )
 
     def loadCurItem(self):
-        index = -1
-        index = self.queue_list.GetNextItem(
-            index,
-            state=wx.LIST_STATE_SELECTED
-        )
-        path = self.queue_list.GetItem(index, 4).GetText()
+        artist, title, path = self.playlist.getCurrent()
         self.doLoadFile(path)
 
     def loadNextItem(self):
-        index = -1
-        numItems = self.queue_list.GetItemCount()
-        index = self.queue_list.GetNextItem(
-            index,
-            state=wx.LIST_STATE_SELECTED
-        )
-        next = (index + 1) % numItems
-        self.queue_list.SetItemState(
-                index, 
-                0,
-                wx.LIST_STATE_SELECTED
-        )
-        self.queue_list.SetItemState(
-                next, 
-                wx.LIST_STATE_SELECTED,
-                wx.LIST_STATE_SELECTED
-        )
-
-        path = self.queue_list.GetItem(next, 4).GetText()
+        self.playlist.selectNext()
+        artist, title, path = self.playlist.getCurrent()
         self.doLoadFile(path)
 
     def loadPrevItem(self):
-        index = -1
-        numItems = self.queue_list.GetItemCount()
-        index = self.queue_list.GetNextItem(
-            index,
-            state=wx.LIST_STATE_SELECTED
-        )
-
-        if index > 0:
-            prev = index - 1
-        else:
-            prev = numItems - 1
-
-        self.queue_list.SetItemState(
-                index, 
-                0,
-                wx.LIST_STATE_SELECTED
-        )
-        self.queue_list.SetItemState(
-                prev, 
-                wx.LIST_STATE_SELECTED,
-                wx.LIST_STATE_SELECTED
-        )
-        path = self.queue_list.GetItem(prev, 4).GetText()
+        self.playlist.selectPrev()
+        artist, title, path = self.playlist.getCurrent()
         self.doLoadFile(path)
 
     def OnMedia_stop(self, evt):
