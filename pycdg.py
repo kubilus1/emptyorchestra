@@ -221,8 +221,6 @@ class cdgPlayer(pykPlayer):
             errorNotifyCallback=None,
             doneCallback=None
         ):
-        """The first parameter, song, may be either a pykdb.SongStruct
-        instance, or it may be a filename. """
 
         pykPlayer.__init__(self, cdgfile, errorNotifyCallback, doneCallback)
 
@@ -440,10 +438,10 @@ class cdgPlayer(pykPlayer):
         # Move file pointer to the beginning of the file
         self.packetReader.Rewind()
 
-        if self.soundFileData:
+        #if self.soundFileData:
             # Actually stop the audio
-            pygame.mixer.music.rewind()
-            pygame.mixer.music.stop()
+        pygame.mixer.music.rewind()
+        pygame.mixer.music.stop()
 
     # Get the current time (in milliseconds). Blocks if pygame is
     # not initialised yet.
@@ -475,6 +473,7 @@ class cdgPlayer(pykPlayer):
         self.packetReader = None
             
         pykPlayer.shutdown(self)
+        pygame.display.quit()
 
     def doStuff(self):
         pykPlayer.doStuff(self)
