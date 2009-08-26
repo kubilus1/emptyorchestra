@@ -633,7 +633,7 @@ class MyApp(wx.App):
                     self.appendSong(filepath, data, title_res)
                 if ext == '.zip':
                     if zipfile.is_zipfile(filepath):
-                        self.findZip(filepath, songlist, title_res)
+                        self.findZip(filepath, data, title_res)
 
         self.fill_list(data)
         print "Done scanning."
@@ -661,7 +661,8 @@ class MyApp(wx.App):
                         title,
                         genre,
                         'zip',
-                        os.path.join(path, filename)
+                        completefn
+                        #os.path.join(path, filename)
                     ])
                 else:
                     print "ZIP member %s compressed with unsupported type (%d)" % (
