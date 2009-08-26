@@ -20,14 +20,9 @@ import emptyorch_xrc
 from pycdg import cdgPlayer
 from pykconstants import *
 
-########################################
-###   Figure out the app directory and
-###   set up the dialogxrc global
-
 APPDIR = sys.path[0]
-if os.path.isfile(APPDIR):  #py2exe/py2app
+if os.path.isfile(APPDIR): 
   APPDIR = os.path.dirname(APPDIR)
-
 
 class SortVirtList(
     wx.ListCtrl, 
@@ -43,7 +38,7 @@ class SortVirtList(
     def __init__(self):
         p = wx.PreListCtrl()
         self.PostCreate(p)
-        self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)  # When the panel is really created, notify me so I can do my initialization
+        self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
 
     def OnCreate(self, event):
         self.attr1 = wx.ListItemAttr()
@@ -358,9 +353,12 @@ class MyApp(wx.App):
         self.frm.Show()
 
     def OnDoSearch(self, evt):
-        print "Searching for: %s" % self.search.GetValue()
-        #print self.media_list.FindItem(-1, self.search.GetValue())
-        self.media_list.SearchData(self.search.GetValue())
+        val = self.search.GetValue()
+        if val:
+            print "Searching for: %s" % val
+            self.media_list.SearchData(val)
+        else:
+            self.OnSearchCancel(evt)
 
     def OnSearchCancel(self, evt):
         print "Cancel search"
@@ -380,15 +378,11 @@ class MyApp(wx.App):
         print "Load File:", path
         if self.playthread:
             self.player.shutdown()
-            print "Joining playthread"
             self.playthread.join()
-            print "Playthread joined"
         self.player = cdgPlayer(path)
         self.player.Play()
         self.playthread = threading.Thread(target=self.player.WaitForPlayer)
-        print "Starting playthread"
         self.playthread.start()
-        print "Playthread started"
         #self.player.WaitForPlayer()
         #if not self.mc.Load(path):
         #    wx.MessageBox("Unable to load %s: Unsupported format?" % path, "ERROR", wx.ICON_ERROR | wx.OK)
@@ -402,58 +396,66 @@ class MyApp(wx.App):
     
 
     def OnButton_addplay_btn(self, evt):
-        index = -1
-        queuelist = []
-        for i in range(self.queue_list.GetSelectedItemCount()):
-            index = self.queue_list.GetNextItem(
-                item=index,
-                #state=wx.LIST_STATE_ALL
-            )
-            queuelist.append((
-                    self.queue_list.GetItem(index, 0).GetText(),
-                    self.queue_list.GetItem(index, 1).GetText(),
-                    self.queue_list.GetItem(index, 2).GetText(),
-                    self.queue_list.GetItem(index, 3).GetText(),
-                    self.queue_list.GetItem(index, 4).GetText(),
-            ))
-        self.addToPlaylist(queuelist)
+        #index = -1
+        #queuelist = []
+        #for i in range(self.queue_list.GetSelectedItemCount()):
+        #    index = self.queue_list.GetNextItem(
+        #        item=index,
+        #        #state=wx.LIST_STATE_ALL
+        #    )
+        #    queuelist.append((
+        #            self.queue_list.GetItem(index, 0).GetText(),
+        #            self.queue_list.GetItem(index, 1).GetText(),
+        #            self.queue_list.GetItem(index, 2).GetText(),
+        #            self.queue_list.GetItem(index, 3).GetText(),
+        #            self.queue_list.GetItem(index, 4).GetText(),
+        #    ))
+        self.addToPlaylist()
 
     def OnButton_playsel_btn(self, evt):
-        self.addToPlaylist()
-        self.loadNextItem()
+        index = -1
+        for i in range(self.media_list.GetSelectedItemCount()):
+            index = self.media_list.GetNextItem(
+                item=index,
+                state=wx.LIST_STATE_SELECTED
+            )
+            path = self.media_list.GetItem(index, 4).GetText()
+            break
+
+        self.doLoadFile(path)
 
     def addToPlaylist(self, data=None):
         index = -1
-        if not data:
-            queuelist = []
-        else:
-            queuelist = data
+        #if not data:
+        #    queuelist = []
+        #else:
+        #    queuelist = data
 
         for i in range(self.media_list.GetSelectedItemCount()):
             index = self.media_list.GetNextItem(
                 item=index,
                 state=wx.LIST_STATE_SELECTED
             )
-            queuelist.append((
-                    self.media_list.GetItem(index, 0).GetText(),
-                    self.media_list.GetItem(index, 1).GetText(),
-                    self.media_list.GetItem(index, 2).GetText(),
-                    self.media_list.GetItem(index, 3).GetText(),
-                    self.media_list.GetItem(index, 4).GetText(),
-            ))
+            #queuelist.append((
+            #        self.media_list.GetItem(index, 0).GetText(),
+            #        self.media_list.GetItem(index, 1).GetText(),
+            #        self.media_list.GetItem(index, 2).GetText(),
+            #        self.media_list.GetItem(index, 3).GetText(),
+            #        self.media_list.GetItem(index, 4).GetText(),
+            #))
             self.playlist.addToList(
                     self.media_list.GetItem(index, 0).GetText(),
                     self.media_list.GetItem(index, 1).GetText(),
                     self.media_list.GetItem(index, 4).GetText(),
             )
-        headers = ['Artist', 'Title', 'Genre', 'Type', 'Path']
-        self.queue_list.SetData(headers, queuelist)
-        numItems = self.queue_list.GetItemCount()
-        self.queue_list.SetItemState(
-                numItems - 1, 
-                wx.LIST_STATE_SELECTED,
-                wx.LIST_STATE_SELECTED
-        )
+        #headers = ['Artist', 'Title', 'Genre', 'Type', 'Path']
+        #self.queue_list.SetData(headers, queuelist)
+        #numItems = self.queue_list.GetItemCount()
+        #self.queue_list.SetItemState(
+        #        numItems - 1, 
+        #        wx.LIST_STATE_SELECTED,
+        #        wx.LIST_STATE_SELECTED
+        #)
 
     def loadCurItem(self):
         artist, title, path = self.playlist.getCurrent()
@@ -542,11 +544,7 @@ class MyApp(wx.App):
                     songlist.append(['','','',ext,filepath])
                 
 
-    def OnButton_choose_btn(self, evt):
-        path = self.file_tree.GetPath()
-        if os.path.isfile(path):
-            self.doLoadFile(path)
-        else:
+    def findKaraoke(self, path):
             print "Scanning: ", path
             #self.doLoadFile(self.file_tree.GetFilePath())
             data = []
@@ -560,6 +558,13 @@ class MyApp(wx.App):
 
             self.fill_list(data)
             print "Done scanning."
+
+    def OnButton_choose_btn(self, evt):
+        path = self.file_tree.GetPath()
+        if os.path.isfile(path):
+            self.doLoadFile(path)
+        else:
+            self.findKaraoke(path)
     
     def fill_list(self, data):
         headers = ['Artist', 'Title', 'Genre', 'Type', 'Path']
