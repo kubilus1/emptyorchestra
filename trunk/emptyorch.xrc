@@ -106,7 +106,9 @@
                   </object>
                   <orient>wxHORIZONTAL</orient>
                   <object class="sizeritem">
-                    <object class="unknown" name="searcher_ctrl"/>
+                    <object class="unknown" name="searcher_ctrl">
+                      <bg>#E5E5E5</bg>
+                    </object>
                     <option>2</option>
                     <flag>wxALL|wxEXPAND</flag>
                     <border>2</border>
@@ -213,7 +215,6 @@
               <flag>wxTOP|wxBOTTOM|wxEXPAND|wxGROW</flag>
               <border>10</border>
             </object>
-            
             <object class="sizeritem">
               <object class="wxPanel" name="Playlist_panel"/>
               <option>1</option>
