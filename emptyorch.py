@@ -1,6 +1,8 @@
 import os
+import re
 import sys
 import pickle
+import zipfile
 import threading
 
 import wx
@@ -514,50 +516,158 @@ class MyApp(wx.App):
         print "VOLUME:", volume
         self.mc.SetVolume(volume)
 
-    def appendSong(self, filepath, songlist):
+    def getFileInfoFromMeta(self, filepath):
+        artist = ''
+        title = ''
+        genre = ''
+
+        name, ext = os.path.splitext(filepath)
+        if ext == '.mp3':
+            try:
+                eid = EasyID3(filepath)
+                artist = eid.get('artist', '')[0]
+                title = eid.get('title', '')[0]
+                genre = eid.get('genre', ['karaoke'])[0]
+            except ID3NoHeaderError:
+                print "No ID Header for", filepath
+        elif ext == '.ogg':
+            audio = OggVorbis(filepath)
+            artist = audio.get('artist', '')[0]
+            title = audio.get('title', '')[0]
+            genre = audio.get('genre', ['karaoke'])[0]
+
+        return artist, title, genre
+
+    def getFileInfoFromRegex(self, file, titleres=None):
+        print "getFileInfoRegex: %s" % file
+        artist0, title0 = ('','')
+
+        if (not artist0 or not title0) and titleres:
+            for titlere in titleres:
+                results = titlere.match(file) 
+                print "Finding RE: %s for %s" % (results, file)
+                if results:
+                    resdict = results.groupdict()
+                    artist0 = resdict.get('artist', '')
+                    title0 = resdict.get('title', '')
+                    print "RE results %s, %s" % (artist0, title0)
+                    break
+
+        return artist0, title0
+
+    def getFileInfoFromGuess(self, file):
+        print "getFileInfoFromGuess: %s " % file
+        filebase = os.path.basename(file)
+        title = ""
+        artist = ""
+
+        chunks = filebase.split(" - ")
+        if len(chunks) >= 2:
+            title = chunks[-1].split(".")[0].strip()
+            artist = chunks[-2].strip()
+            #print "' - 'artist:%s, title:%s: " % (artist, title)
+
+        if not title and not artist:
+            chunks = filebase.split("-")
+            if len(chunks) >= 2:
+                title = chunks[-1].split(".")[0].strip()
+                artist = chunks[-2].strip()
+                #print "'-'artist:%s, title:%s: " % (artist, title)
+
+        if not title and not artist:
+            chunks = filebase.split("-")
+            if len(chunks) >= 2:
+                title = chunks[-1].split(".")[0].strip()
+                artist = chunks[-1].strip()
+                #print "' 'artist:%s, title:%s: " % (artist, title)
+
+        return artist, title
+
+    def getFileInfo(self, filepath, titlere):
+        artist, title, genre = self.getFileInfoFromMeta(filepath)
+        if not artist or not title and titlere:
+            artist, title = self.getFileInfoFromRegex(filepath, titlere)
+        if not artist or not title:
+            artist, title = self.getFileInfoFromGuess(filepath)
+        return artist, title, genre
+
+    def appendSong(self, filepath, songlist, titlere=None):
         name, ext = os.path.splitext(filepath)
         for ext in self.media_exts:
             if os.path.isfile("%s%s" % (name, ext)):
-                if ext == '.mp3':
-                    try:
-                        eid = EasyID3(filepath)
-                        songlist.append([
-                            eid.get('artist',[''])[0],
-                            eid.get('title',[''])[0],
-                            eid.get('genre',[''])[0],
-                            'mp3+cdg',
-                            filepath
-                        ])
-                    except ID3NoHeaderError:
-                        print "No ID Header for", filepath
-                        songlist.append(['','','','mp3+cdg',filepath])
-                elif ext == '.ogg':
-                    audio = OggVorbis(filepath)
-                    songlist.append([
-                        audio.get('artist',[''])[0],
-                        audio.get('title',[''])[0],
-                        audio.get('genre',[''])[0],
-                        'ogg+cdg',
-                        filepath
-                    ])
-                else:
-                    songlist.append(['','','',ext,filepath])
-                
+                artist, title, genre = self.getFileInfo(filepath, titlere)
+                songlist.append([
+                    artist, title, genre, ext, filepath
+                ])
 
     def findKaraoke(self, path):
-            print "Scanning: ", path
-            #self.doLoadFile(self.file_tree.GetFilePath())
-            data = []
-            for root, dirs, files in os.walk(path):
-                for file in files:
-                    name, ext = os.path.splitext(file)
-                    #print "(%s, %s)" % (name, ext)
-                    if ext in self.kar_exts:
-                        filepath = os.path.join(root, file)
-                        self.appendSong(filepath, data)
+        curRows = self.media_list.rows
+        curPaths = map(lambda x: x[4], curRows)
+        print "Scanning: ", path
+        #self.doLoadFile(self.file_tree.GetFilePath())
+        title_res = []
+        data = []
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                filepath = os.path.join(root, file)
+                if filepath in curPaths:
+                    print "Already have entry for: %s" % filepath
+                    continue
+                # See if we have a title_re file
+                title_re_file = os.path.join(root, 'titlere.txt')
+                if os.path.isfile(title_re_file):
+                    print "Found titlere.txt"
+                    title_res = []
+                    f = open(title_re_file)
+                    try:
+                        redata = f.readlines()
+                        print "REDATA:", redata
+                    finally:
+                        f.close()
+                    for titlere in redata:
+                        title_res.append(re.compile(titlere.strip()))
 
-            self.fill_list(data)
-            print "Done scanning."
+                name, ext = os.path.splitext(file)
+                #print "(%s, %s)" % (name, ext)
+                if ext in self.kar_exts:
+                    self.appendSong(filepath, data, title_res)
+                if ext == '.zip':
+                    if zipfile.is_zipfile(filepath):
+                        self.findZip(filepath, songlist, title_res)
+
+        self.fill_list(data)
+        print "Done scanning."
+
+    def findZip(self, path, songlist, titlere=None):
+        print "_searchZip %s" % path
+        zip = zipfile.ZipFile(path)
+        origfile = os.path.basename(path)
+        namelist = zip.namelist()
+        for filename in namelist:
+            root, ext = os.path.splitext(filename)
+            if ext in self.kar_exts:
+                # Python zipfile only supports deflated and stored
+                info = zip.getinfo(filename)
+                if info.compress_type == zipfile.ZIP_STORED \
+                or info.compress_type == zipfile.ZIP_DEFLATED:
+                    completefn = os.path.join(
+                        origfile,
+                        filename
+                    )
+                    artist, title, genre = self.getFileInfo(completefn, titlere)
+                    print "ZIP FILENAME: %s" % completefn
+                    songlist.append([
+                        artist,
+                        title,
+                        genre,
+                        'zip',
+                        os.path.join(path, filename)
+                    ])
+                else:
+                    print "ZIP member %s compressed with unsupported type (%d)" % (
+                        filename,info.compress_type
+                    )
+
 
     def OnButton_choose_btn(self, evt):
         path = self.file_tree.GetPath()
