@@ -395,7 +395,7 @@ class MyApp(wx.App):
         #    self.frm.GetSizer().Layout()
         #    self.slider.SetRange(0, self.mc.Length())
         #    self.mc.Play()
-    
+        player.shutdown() 
 
     def OnButton_addplay_btn(self, evt):
         #index = -1
@@ -686,3 +686,4 @@ if __name__ == "__main__":
     app = MyApp(False)
     app.MainLoop()
     print "Done with app"
+    app.Destroy()

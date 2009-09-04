@@ -213,11 +213,10 @@ TILE_HEIGHT             = CDG_DISPLAY_HEIGHT / TILES_PER_COL
 class cdgPlayer(pykPlayer):
     # Initialise the player instace
 
-    displaySize = [640,480]
-
     def __init__(
             self, 
             cdgfile,
+            size=(640,480),
             errorNotifyCallback=None,
             doneCallback=None
         ):
@@ -231,12 +230,12 @@ class cdgPlayer(pykPlayer):
         self.PlayTime = 0
         self.PlayStartTime = 0
         self.PlayFrame = 0
+        self.displaySize = size
         # Check for a matching mp3 or ogg file.  Check extensions
         # in the following order.
         validexts = [
             '.wav', '.ogg', '.mp3'
         ]
-
 
         print "Get soundFileData"
         basepath = os.path.splitext(cdgfile)[0]
@@ -407,7 +406,6 @@ class cdgPlayer(pykPlayer):
     def Poll(self):
         self.handleEvents()
         self.doStuff()
-
         # Wait a bit to save on wasteful CPU usage.
         pygame.time.wait(1)
 
@@ -471,7 +469,6 @@ class cdgPlayer(pykPlayer):
         self.workingSurface = None
         self.workingTile = None
         self.packetReader = None
-            
         pykPlayer.shutdown(self)
         pygame.display.quit()
 
