@@ -213,9 +213,9 @@ class Playlist_list(gizmos.EditableListBox):
         self.itemIndexMap = self.itemDataMap.keys()
         self.SetItemCount(len(self.itemDataMap))
 
-    def addToList(self, artist, title, filename):
+    def addToList(self, artist, title, filename, archive):
         strings = self.GetStrings()
-        strings.append("%s  |  %s  |  %s" % (artist, title, filename))
+        strings.append("  |  ".join((artist, title, filename, archive)))
         self.SetStrings(strings)
 
     def getCurrent(self):
@@ -376,12 +376,16 @@ class MyApp(wx.App):
             print "Loading:", path
         dlg.Destroy()
         
-    def doLoadFile(self, path):
+    def doLoadFile(self, path, archive=None):
         print "Load File:", path
         if self.playthread:
             self.player.shutdown()
             self.playthread.join()
-        self.player = cdgPlayer(path)
+        if archive:
+            self.player = cdgPlayer(path, zippath=archive)
+        else:
+            self.player = cdgPlayer(path)
+        
         self.player.Play()
         self.playthread = threading.Thread(target=self.player.WaitForPlayer)
         self.playthread.start()
@@ -395,23 +399,9 @@ class MyApp(wx.App):
         #    self.frm.GetSizer().Layout()
         #    self.slider.SetRange(0, self.mc.Length())
         #    self.mc.Play()
-        player.shutdown() 
+        #self.player.shutdown() 
 
     def OnButton_addplay_btn(self, evt):
-        #index = -1
-        #queuelist = []
-        #for i in range(self.queue_list.GetSelectedItemCount()):
-        #    index = self.queue_list.GetNextItem(
-        #        item=index,
-        #        #state=wx.LIST_STATE_ALL
-        #    )
-        #    queuelist.append((
-        #            self.queue_list.GetItem(index, 0).GetText(),
-        #            self.queue_list.GetItem(index, 1).GetText(),
-        #            self.queue_list.GetItem(index, 2).GetText(),
-        #            self.queue_list.GetItem(index, 3).GetText(),
-        #            self.queue_list.GetItem(index, 4).GetText(),
-        #    ))
         self.addToPlaylist()
 
     def OnButton_playsel_btn(self, evt):
@@ -421,57 +411,43 @@ class MyApp(wx.App):
                 item=index,
                 state=wx.LIST_STATE_SELECTED
             )
+            filetype = self.media_list.GetItem(index, 3).GetText()
             path = self.media_list.GetItem(index, 4).GetText()
+            archive = self.media_list.GetItem(index, 5).GetText()
             break
 
-        self.doLoadFile(path)
+        if filetype == '.zip':
+            self.doLoadFile(path, archive)
+        else:
+            self.doLoadFile(path)
 
     def addToPlaylist(self, data=None):
         index = -1
-        #if not data:
-        #    queuelist = []
-        #else:
-        #    queuelist = data
-
         for i in range(self.media_list.GetSelectedItemCount()):
             index = self.media_list.GetNextItem(
                 item=index,
                 state=wx.LIST_STATE_SELECTED
             )
-            #queuelist.append((
-            #        self.media_list.GetItem(index, 0).GetText(),
-            #        self.media_list.GetItem(index, 1).GetText(),
-            #        self.media_list.GetItem(index, 2).GetText(),
-            #        self.media_list.GetItem(index, 3).GetText(),
-            #        self.media_list.GetItem(index, 4).GetText(),
-            #))
             self.playlist.addToList(
                     self.media_list.GetItem(index, 0).GetText(),
                     self.media_list.GetItem(index, 1).GetText(),
                     self.media_list.GetItem(index, 4).GetText(),
+                    self.media_list.GetItem(index, 5).GetText(),
             )
-        #headers = ['Artist', 'Title', 'Genre', 'Type', 'Path']
-        #self.queue_list.SetData(headers, queuelist)
-        #numItems = self.queue_list.GetItemCount()
-        #self.queue_list.SetItemState(
-        #        numItems - 1, 
-        #        wx.LIST_STATE_SELECTED,
-        #        wx.LIST_STATE_SELECTED
-        #)
 
     def loadCurItem(self):
-        artist, title, path = self.playlist.getCurrent()
-        self.doLoadFile(path)
+        artist, title, path, archive = self.playlist.getCurrent()
+        self.doLoadFile(path, archive)
 
     def loadNextItem(self):
         self.playlist.selectNext()
-        artist, title, path = self.playlist.getCurrent()
-        self.doLoadFile(path)
+        artist, title, path, archive = self.playlist.getCurrent()
+        self.doLoadFile(path, archive)
 
     def loadPrevItem(self):
         self.playlist.selectPrev()
-        artist, title, path = self.playlist.getCurrent()
-        self.doLoadFile(path)
+        artist, title, path, archive = self.playlist.getCurrent()
+        self.doLoadFile(path, archive)
 
     def OnMedia_stop(self, evt):
         print "OnMedia Stop!"
@@ -597,7 +573,7 @@ class MyApp(wx.App):
             if os.path.isfile("%s%s" % (name, ext)):
                 artist, title, genre = self.getFileInfo(filepath, titlere)
                 songlist.append([
-                    artist, title, genre, ext, filepath
+                    artist, title, genre, ext, filepath, ''
                 ])
 
     def findKaraoke(self, path):
@@ -660,9 +636,10 @@ class MyApp(wx.App):
                         artist,
                         title,
                         genre,
-                        'zip',
-                        completefn
-                        #os.path.join(path, filename)
+                        '.zip',
+                        #completefn
+                        filename,
+                        path
                     ])
                 else:
                     print "ZIP member %s compressed with unsupported type (%d)" % (
@@ -678,7 +655,7 @@ class MyApp(wx.App):
             self.findKaraoke(path)
     
     def fill_list(self, data):
-        headers = ['Artist', 'Title', 'Genre', 'Type', 'Path']
+        headers = ['Artist', 'Title', 'Genre', 'Type', 'Path', 'Archive']
         self.media_list.SetData(headers, data)
         self.media_list.SaveData('.musicdata')
 
