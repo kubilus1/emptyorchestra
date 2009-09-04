@@ -177,6 +177,10 @@
 
 from mock import Mock
 
+import tempfile
+import shutil
+import zipfile
+
 from pykconstants import *
 from pykplayer import pykPlayer 
 import sys, pygame, os, string, math, time
@@ -217,6 +221,7 @@ class cdgPlayer(pykPlayer):
             self, 
             cdgfile,
             size=(640,480),
+            zippath=None,
             errorNotifyCallback=None,
             doneCallback=None
         ):
@@ -231,26 +236,32 @@ class cdgPlayer(pykPlayer):
         self.PlayStartTime = 0
         self.PlayFrame = 0
         self.displaySize = size
+        self.tempdir = tempfile.mkdtemp()
         # Check for a matching mp3 or ogg file.  Check extensions
         # in the following order.
-        validexts = [
+        self.validexts = [
             '.wav', '.ogg', '.mp3'
         ]
 
         print "Get soundFileData"
-        basepath = os.path.splitext(cdgfile)[0]
-        soundFilePath = None
-        for ext in validexts:
-            tempfile = "%s%s" % (basepath, ext)
-            print "TEST:", tempfile
-            if os.path.isfile(tempfile):
-                soundFilePath = tempfile
-                break
+        if zippath:
+            print "Opening zip, %s" % zippath
+            cdgfile, soundFilePath = self._extractZipData(cdgfile, zippath)
+        else:
+            basepath = os.path.splitext(cdgfile)[0]
+            soundFilePath = None
+            for ext in self.validexts:
+                tempsound = "%s%s" % (basepath, ext)
+                print "TEST:", tempsound
+                if os.path.isfile(tempsound):
+                    soundFilePath = tempsound
+                    break
 
-        if not soundFilePath:
-            ErrorString = "There is no mp3 or ogg file to match :", cdgfile 
-            self.ErrorNotifyCallback (ErrorString)
-            raise 'NoSoundFile'
+            if not soundFilePath:
+                ErrorString = "There is no mp3 or ogg file to match :", cdgfile 
+                self.ErrorNotifyCallback (ErrorString)
+                raise 'NoSoundFile'
+
         print "Get cdg file data."
         f = open(cdgfile, 'rb')
         try:
@@ -359,6 +370,12 @@ class cdgPlayer(pykPlayer):
 
         # Some session-wide constants.
         self.ms_per_update = (1000.0 / 30)        
+
+    def __del__(self):
+        if self.tempdir:
+            shutil.rmtree(self.tempdir)
+            self.tempdir = None
+        pykPlayer.__del__(self)
 
     def initPlayer(self):
         #pygame.mixer.pre_init(44100, -16, 2, 1024)    
@@ -471,6 +488,9 @@ class cdgPlayer(pykPlayer):
         self.packetReader = None
         pykPlayer.shutdown(self)
         pygame.display.quit()
+        if self.tempdir:
+            shutil.rmtree(self.tempdir)
+            self.tempdir = None
 
     def doStuff(self):
         pykPlayer.doStuff(self)
@@ -706,6 +726,58 @@ class cdgPlayer(pykPlayer):
             #pygame.display.update()
 
         #pygame.display.update()
+
+    def _extractZipData(self, cdgfile, zippath):
+        cdgFilePath = None
+        soundFilePath = None
+        basepath = os.path.splitext(cdgfile)[0]
+
+        zip = zipfile.ZipFile(zippath)
+        try:
+            namelist = zip.namelist()
+            zipSoundFile = None
+
+            if cdgfile not in namelist:
+                self.ErrorNotifyCallback("Not cdg match in archive for" % cdgfile)
+                raise "NoCDGFile"
+
+            for ext in self.validexts:
+                tempsound = "%s%s" % (basepath, ext)
+                if tempsound in namelist:
+                    zipSoundFile = tempsound
+                    break
+            if not zipSoundFile:
+                ErrorString = "There is no mp3 or ogg file to match :", cdgfile 
+                self.ErrorNotifyCallback (ErrorString)
+                raise 'NoSoundFile'
+
+            #
+            # ZipFile.extract not available pre python 2.6
+            #
+            #zip.extract(cdgfile, self.tempdir)
+            #zip.extract(zipSoundFile, self.tempdir)
+        
+            self._writeZipMember(zippath, cdgfile, self.tempdir)
+            self._writeZipMember(zippath, zipSoundFile, self.tempdir)
+
+            soundFilePath = os.path.join(self.tempdir, zipSoundFile)
+            cdgFilePath = os.path.join(self.tempdir, cdgfile)
+        finally:
+            zip.close()
+
+        return cdgFilePath, soundFilePath
+
+    def _writeZipMember(self, zippath, member, outpath):
+        f = open(os.path.join(outpath, member), 'w')
+        try:
+            zip = zipfile.ZipFile(zippath)
+            try:
+                data = zip.read(member)
+                f.write(data)
+            finally:
+                zip.close()
+        finally:
+            f.close()
 
 def defaultErrorPrint(ErrorString):
     print (ErrorString)
