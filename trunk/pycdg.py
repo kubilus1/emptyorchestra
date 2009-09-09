@@ -177,6 +177,7 @@
 
 from mock import Mock
 
+import os
 import tempfile
 import shutil
 import zipfile
@@ -186,6 +187,8 @@ from pykplayer import pykPlayer
 import sys, pygame, os, string, math, time
 from pygame.locals import *
 
+if os.name == 'nt':
+    os.environ['SDL_VIDEODRIVER'] = 'windib'
 
 # Import the optimised C version if available, or fall back to Python
 try:
