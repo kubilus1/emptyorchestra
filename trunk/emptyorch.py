@@ -587,7 +587,7 @@ class MyApp(wx.App):
             for file in files:
                 filepath = os.path.join(root, file)
                 if filepath in curPaths:
-                    print "Already have entry for: %s" % filepath
+                    #print "Already have entry for: %s" % filepath
                     continue
                 # See if we have a title_re file
                 title_re_file = os.path.join(root, 'titlere.txt')
@@ -597,7 +597,6 @@ class MyApp(wx.App):
                     f = open(title_re_file)
                     try:
                         redata = f.readlines()
-                        print "REDATA:", redata
                     finally:
                         f.close()
                     for titlere in redata:
@@ -609,17 +608,22 @@ class MyApp(wx.App):
                     self.appendSong(filepath, data, title_res)
                 if ext == '.zip':
                     if zipfile.is_zipfile(filepath):
-                        self.findZip(filepath, data, title_res)
+                        self.findInZip(filepath, data, curPaths, title_res)
 
         self.fill_list(data)
         print "Done scanning."
 
-    def findZip(self, path, songlist, titlere=None):
+    def findInZip(self, path, songlist, curfiles, titlere=None):
         print "_searchZip %s" % path
         zip = zipfile.ZipFile(path)
         origfile = os.path.basename(path)
         namelist = zip.namelist()
         for filename in namelist:
+            filepath = os.path.join(path, filename)
+            if filepath in curfiles:
+                #print "Already have entry for: %s" % filepath
+                continue
+
             root, ext = os.path.splitext(filename)
             if ext in self.kar_exts:
                 # Python zipfile only supports deflated and stored
@@ -643,7 +647,7 @@ class MyApp(wx.App):
                     ])
                 else:
                     print "ZIP member %s compressed with unsupported type (%d)" % (
-                        filename,info.compress_type
+                        filename, info.compress_type
                     )
 
 
