@@ -143,15 +143,24 @@ class MyApp(wx.App):
         if self.playthread:
             self.player.shutdown()
             self.playthread.join()
+        if self.player:
+            print "STATE:", self.player.State
+            if self.player.State == STATE_PLAYING:
+                print "Playing... Shutting down."
+                self.player.shutdown()
+
         if archive:
             self.player = cdgPlayer(path, zippath=archive)
         else:
             self.player = cdgPlayer(path)
-        
+       
         self.player.Play()
-        self.playthread = threading.Thread(target=self.player.WaitForPlayer)
-        self.playthread.start()
-        #self.player.WaitForPlayer()
+        if os.name == 'nt':
+            self.player.WaitForPlayer()
+            #self.player.shutdown()
+        else:
+            self.playthread = threading.Thread(target=self.player.WaitForPlayer)
+            self.playthread.start()
         #if not self.mc.Load(path):
         #    wx.MessageBox("Unable to load %s: Unsupported format?" % path, "ERROR", wx.ICON_ERROR | wx.OK)
         #else:
