@@ -428,6 +428,12 @@ class cdgPlayer(pykPlayer):
                     self.displayFlags |= pygame.FULLSCREEN
                     pygame.display.set_mode(self.displaySize, self.displayFlags, self.displayDepth)
                     self.fullScreen = True
+            elif event.key == pygame.K_RIGHT:
+                self.InternalOffsetTime += 50
+                print "Offset:", self.InternalOffsetTime
+            elif event.key == pygame.K_LEFT:
+                self.InternalOffsetTime -= 50
+                print "Offset:", self.InternalOffsetTime
                 #pygame.display.toggle_fullscreen()
 
         #self.handleEvent(event)

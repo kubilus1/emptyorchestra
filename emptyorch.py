@@ -49,6 +49,7 @@ class MyApp(wx.App):
         if self.player:
             self.cdgSize = self.player.displaySize
             self.fullscreen = self.player.fullScreen
+            self.delay = self.player.InternalOffsetTime
         self.set_settings()       
     #    self.timer.Stop()
 
@@ -181,6 +182,7 @@ class MyApp(wx.App):
         if self.player:
             self.cdgSize = self.player.displaySize
             self.fullscreen = self.player.fullScreen
+            self.delay = self.player.InternalOffsetTime
             print "STATE:", self.player.State
             if self.player.State == STATE_PLAYING:
                 print "Playing... Shutting down."
