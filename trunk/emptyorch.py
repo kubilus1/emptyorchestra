@@ -5,6 +5,7 @@ import glob
 import pickle
 import zipfile
 import threading
+import ConfigParser
 
 import wx
 import wx.media
@@ -40,16 +41,48 @@ class MyApp(wx.App):
     def OnInit(self):
         # Get the XRC Resource
         self.res = xrc.XmlResource(os.path.join(APPDIR, 'emptyorch.xrc'))
+        self.get_settings()
         self.init_frame()
         return True
 
-    #def __del__(self):
+    def __del__(self):
+        if self.player:
+            self.cdgSize = self.player.displaySize
+            self.fullscreen = self.player.fullScreen
+        self.set_settings()       
     #    self.timer.Stop()
+
+    def get_settings(self):
+        config = ConfigParser.ConfigParser()
+        config.read('emptyorch.cfg')
+        self.delay = int(config.get('cdg', 'delay'))
+        self.cdgSize = eval(config.get('cdg', 'size'))
+        self.cdgPos = eval(config.get('cdg', 'pos'))
+        self.fullscreen = eval(config.get('cdg', 'fullscreen'))
+        self.appSize = eval(config.get('app', 'size'))
+        self.appPos = eval(config.get('app', 'pos'))
+
+    def set_settings(self):
+        config = ConfigParser.ConfigParser()
+        #config.read('emptyorch.cfg')
+        config.add_section('cdg')
+        config.set('cdg', 'delay', str(self.delay))
+        config.set('cdg', 'size', str(self.cdgSize))
+        config.set('cdg', 'pos', str(self.cdgPos))
+        config.set('cdg', 'fullscreen', str(self.fullscreen))
+        config.add_section('app')
+        config.set('app', 'size', str(self.appSize))
+        config.set('app', 'pos', str(self.appPos))
+        f = open('emptyorch.cfg', 'wb')
+        try:
+            config.write(f)
+        finally:
+            f.close()
 
     def init_frame(self):
         # Get stuff from the XRC
         self.frm = self.res.LoadFrame(None, 'emptyorch_frame') 
-        
+ 
         self.media_panel = xrc.XRCCTRL(self.frm, 'media_panel')
         self.playlist_panel = xrc.XRCCTRL(self.frm, 'Playlist_panel')
         self.slider = xrc.XRCCTRL(self.frm, 'slider')
@@ -144,16 +177,30 @@ class MyApp(wx.App):
         if self.playthread:
             self.player.shutdown()
             self.playthread.join()
+
         if self.player:
+            self.cdgSize = self.player.displaySize
+            self.fullscreen = self.player.fullScreen
             print "STATE:", self.player.State
             if self.player.State == STATE_PLAYING:
                 print "Playing... Shutting down."
                 self.player.shutdown()
 
         if archive:
-            self.player = cdgPlayer(path, zippath=archive)
+            self.player = cdgPlayer(
+                path, 
+                size = self.cdgSize,
+                fullscreen = self.fullscreen,
+                zippath = archive,
+                offsetTime = self.delay
+            )
         else:
-            self.player = cdgPlayer(path)
+            self.player = cdgPlayer(
+                path, 
+                size = self.cdgSize, 
+                fullscreen = self.fullscreen,
+                offsetTime = self.delay
+            )
        
         self.player.Play()
         if os.name == 'nt':
