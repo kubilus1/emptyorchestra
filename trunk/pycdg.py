@@ -178,6 +178,7 @@
 from mock import Mock
 
 import os
+import glob
 import tempfile
 import shutil
 import zipfile
@@ -253,11 +254,11 @@ class cdgPlayer(pykPlayer):
         else:
             basepath = os.path.splitext(cdgfile)[0]
             soundFilePath = None
-            for ext in self.validexts:
-                tempsound = "%s%s" % (basepath, ext)
-                print "TEST:", tempsound
-                if os.path.isfile(tempsound):
-                    soundFilePath = tempsound
+            candidates = glob.glob("%s.*" % basepath)
+            for candidate in candidates:
+                name, ext = os.path.splitext(candidate)
+                if ext.lower() in self.validexts:
+                    soundFilePath = candidate
                     break
 
             if not soundFilePath:
@@ -358,7 +359,7 @@ class cdgPlayer(pykPlayer):
             # pretty close.
             print "Internal offset time"
             #self.InternalOffsetTime = -manager.GetAudioBufferMS()
-            self.InternalOffsetTime = -1000
+            #self.InternalOffsetTime = -1000
 
         else:
             print "NO!"
