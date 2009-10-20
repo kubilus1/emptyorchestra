@@ -225,7 +225,9 @@ class cdgPlayer(pykPlayer):
             self, 
             cdgfile,
             size=(640,480),
+            fullscreen=False,
             zippath=None,
+            offsetTime=0,
             errorNotifyCallback=None,
             doneCallback=None
         ):
@@ -235,11 +237,12 @@ class cdgPlayer(pykPlayer):
         # With the nomusic option no music will be played.
         soundFileData = None
         self.State = STATE_INIT
-        self.InternalOffsetTime = 0
+        self.InternalOffsetTime = offsetTime
         self.PlayTime = 0
         self.PlayStartTime = 0
         self.PlayFrame = 0
         self.displaySize = size
+        self.fullScreen = fullscreen 
         self.tempdir = tempfile.mkdtemp()
         # Check for a matching mp3 or ogg file.  Check extensions
         # in the following order.
@@ -277,10 +280,9 @@ class cdgPlayer(pykPlayer):
         # timer carries on even when the song has been paused.
         self.pauseOffsetTime = 0
         self.cdgZoom = 'soft'
-        self.FullScreen = False
         self.displayDepth = 8
         self.displayFlags = pygame.RESIZABLE | pygame.HWSURFACE
-        if self.FullScreen:
+        if self.fullScreen:
             self.displayFlags |= pygame.FULLSCREEN
 
         print "Init player"
@@ -357,12 +359,9 @@ class cdgPlayer(pykPlayer):
             # slower computer that's struggling to keep up, this may not
             # be the right amount of delay, but it should usually be
             # pretty close.
-            print "Internal offset time"
-            #self.InternalOffsetTime = -manager.GetAudioBufferMS()
             #self.InternalOffsetTime = -1000
 
         else:
-            print "NO!"
             # Don't play anything.
             self.InternalOffsetTime = 0
             
@@ -409,6 +408,7 @@ class cdgPlayer(pykPlayer):
             # Tell the player we have finished resizing 
             self.doResizeEnd()
         elif event.type == pygame.QUIT:
+            print "pycdg Close"
             self.Close()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -417,6 +417,18 @@ class cdgPlayer(pykPlayer):
                 self.Pause()
             elif event.key == pygame.K_SPACE:
                 self.Pause()
+            elif event.key == pygame.K_f:
+                if self.fullScreen:
+                    print "clear fullScreen"
+                    self.displayFlags &= ~pygame.FULLSCREEN
+                    pygame.display.set_mode(self.displaySize, self.displayFlags, self.displayDepth)
+                    self.fullScreen = False
+                else:
+                    print "set fullScreen"
+                    self.displayFlags |= pygame.FULLSCREEN
+                    pygame.display.set_mode(self.displaySize, self.displayFlags, self.displayDepth)
+                    self.fullScreen = True
+                #pygame.display.toggle_fullscreen()
 
         #self.handleEvent(event)
 
@@ -518,6 +530,9 @@ class cdgPlayer(pykPlayer):
             if (self.curr_pos - self.LastPos) > self.ms_per_update:
                 self.cdgDisplayUpdate()
                 self.LastPos = self.curr_pos
+
+        #else:
+        #    print "Not playing"
 
     #def handleEvent(self, event):
     #    pykPlayer.handleEvent(self, event)
