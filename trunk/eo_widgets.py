@@ -1,8 +1,8 @@
 import os
 import re
 import sys
+import glob
 import pickle
-
 
 import wx
 import wx.media
@@ -176,13 +176,23 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         mtype = self.itemDataMap[index][3]
         path = self.itemDataMap[index][4]
 
-        if mtype == 'mp3':
+        validexts = ['.mp3', '.ogg']
+        name, ext = os.path.splitext(path)
+        if ext == ".cdg":
+            candidates = glob.glob("%s.*" % name)
+            for candidate in candidates:
+                name, ext = os.path.splitext(candidate)
+                if ext in validexts:
+                    path = candidate
+                    break
+
+        if mtype in ('mp3', '.mp3'):
             m = MP3(path, ID3=EasyID3)
             try:
                 m.add_tags(ID3=EasyID3)
             except mutagen.id3.error:
                 print "Already has tag"
-        elif mtype == 'ogg':
+        elif mtype in ('ogg', 'ogg'):
             m = OggVorbis(path)
         else:
             print "Unrecognized type."
