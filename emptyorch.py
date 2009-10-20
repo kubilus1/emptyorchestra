@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import glob
 import pickle
 import zipfile
 import threading
@@ -286,7 +287,7 @@ class MyApp(wx.App):
         return artist, title, genre
 
     def getFileInfoFromRegex(self, file, titleres=None):
-        print "getFileInfoRegex: %s" % file
+        #print "getFileInfoRegex: %s" % file
         artist0, title0 = ('','')
 
         if (not artist0 or not title0) and titleres:
@@ -303,7 +304,7 @@ class MyApp(wx.App):
         return artist0, title0
 
     def getFileInfoFromGuess(self, file):
-        print "getFileInfoFromGuess: %s " % file
+        #print "getFileInfoFromGuess: %s " % file
         filebase = os.path.basename(file)
         title = ""
         artist = ""
@@ -330,22 +331,42 @@ class MyApp(wx.App):
 
         return artist, title
 
-    def getFileInfo(self, filepath, titlere):
-        artist, title, genre = self.getFileInfoFromMeta(filepath)
+    def getFileInfoFromInfo(self, filepath, fileinfo):
+        #print "getFileInfoFromInfo: ",
+        basename = os.path.basename(filepath)
+        title, artist = fileinfo.get(basename, ('', ''))
+        return artist, title
+
+    def getFileInfo(self, filepath, fileinfo, titlere):
+        genre = ''
+        artist, title = self.getFileInfoFromInfo(filepath, fileinfo)
+        if not artist or not title:
+            artist, title, genre = self.getFileInfoFromMeta(filepath)
         if not artist or not title and titlere:
             artist, title = self.getFileInfoFromRegex(filepath, titlere)
         if not artist or not title:
             artist, title = self.getFileInfoFromGuess(filepath)
         return artist, title, genre
 
-    def appendSong(self, filepath, songlist, titlere=None):
+    def appendSong(self, filepath, songlist, fileinfo, titlere=None):
         name, ext = os.path.splitext(filepath)
-        for ext in self.media_exts:
-            if os.path.isfile("%s%s" % (name, ext)):
-                artist, title, genre = self.getFileInfo(filepath, titlere)
-                songlist.append([
-                    artist, title, genre, ext, filepath, ''
-                ])
+        candidates = glob.glob("%s.*" % name)
+        musicfile = None
+        for candidate in candidates:
+            name, ext = os.path.splitext(candidate)
+            if ext.lower() in self.media_exts:
+                musicfile = candidate
+                break
+
+        if musicfile:
+            artist, title, genre = self.getFileInfo(
+                    filepath, 
+                    fileinfo,
+                    titlere
+            )
+            songlist.append([
+                artist, title, genre, ext, filepath, ''
+            ])
 
     def findKaraoke(self, path):
         curRows = self.media_list.rows
@@ -353,38 +374,66 @@ class MyApp(wx.App):
         print "Scanning: ", path
         #self.doLoadFile(self.file_tree.GetFilePath())
         title_res = []
-        data = []
+        songdata = []
+        fileinfo = {}
         for root, dirs, files in os.walk(path):
+            # Check each dir to see if there is a titles file
+            title_file = os.path.join(root, "titles.txt")
+            if os.path.isfile(title_file):
+                print "Found %s" % title_file
+                f = open(title_file)
+                try:
+                    titledata = f.readlines()
+                    for line in titledata:
+                        chunks = line.split('|')
+                        if len(chunks) < 3:
+                            continue
+                        else:
+                            # Index on the path, return tuple of
+                            # Title, Artist
+                            fileinfo[chunks[0]] = (
+                                chunks[1].strip(),
+                                chunks[2].strip()
+                            )
+                finally:
+                    f.close()
+
+            # See if we have a title_re file
+            title_re_file = os.path.join(root, 'titlere.txt')
+            if os.path.isfile(title_re_file):
+                print "Found titlere.txt"
+                title_res = []
+                f = open(title_re_file)
+                try:
+                    redata = f.readlines()
+                finally:
+                    f.close()
+                for titlere in redata:
+                    title_res.append(re.compile(titlere.strip()))
+
             for file in files:
                 filepath = os.path.join(root, file)
                 if filepath in curPaths:
                     #print "Already have entry for: %s" % filepath
                     continue
-                # See if we have a title_re file
-                title_re_file = os.path.join(root, 'titlere.txt')
-                if os.path.isfile(title_re_file):
-                    print "Found titlere.txt"
-                    title_res = []
-                    f = open(title_re_file)
-                    try:
-                        redata = f.readlines()
-                    finally:
-                        f.close()
-                    for titlere in redata:
-                        title_res.append(re.compile(titlere.strip()))
-
                 name, ext = os.path.splitext(file)
                 #print "(%s, %s)" % (name, ext)
                 if ext in self.kar_exts:
-                    self.appendSong(filepath, data, title_res)
+                    self.appendSong(filepath, songdata, fileinfo, title_res)
                 if ext == '.zip':
                     if zipfile.is_zipfile(filepath):
-                        self.findInZip(filepath, data, curPaths, title_res)
+                        self.findInZip(
+                            filepath, 
+                            songdata, 
+                            curPaths, 
+                            fileinfo,
+                            title_res
+                        )
 
-        self.fill_list(data)
+        self.fill_list(songdata)
         print "Done scanning."
 
-    def findInZip(self, path, songlist, curfiles, titlere=None):
+    def findInZip(self, path, songlist, curfiles, fileinfo, titlere=None):
         print "_searchZip %s" % path
         zip = zipfile.ZipFile(path)
         origfile = os.path.basename(path)
@@ -405,7 +454,11 @@ class MyApp(wx.App):
                         origfile,
                         filename
                     )
-                    artist, title, genre = self.getFileInfo(completefn, titlere)
+                    artist, title, genre = self.getFileInfo(
+                            completefn,
+                            fileinfo,
+                            titlere
+                    )
                     print "ZIP FILENAME: %s" % completefn
                     songlist.append([
                         artist,
