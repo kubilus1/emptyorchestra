@@ -45,7 +45,7 @@ class MyApp(wx.App):
         self.init_frame()
         return True
 
-    def __del__(self):
+    def OnExit(self):
         if self.player:
             self.cdgSize = self.player.displaySize
             self.fullscreen = self.player.fullScreen
