@@ -30,6 +30,26 @@ APPDIR = sys.path[0]
 if os.path.isfile(APPDIR): 
   APPDIR = os.path.dirname(APPDIR)
 
+def _fix_my_import(name):
+    try:
+        mod = __import__(name)
+    except ImportError:
+        import traceback
+        print traceback.format_exc()
+        raise
+
+    try:
+        components = name.split('.')
+        for comp in components[1:]:
+            mod = getattr(mod, comp)
+    except:
+        pass
+
+    return mod
+
+if os.name == "nt":
+    xrc._my_import = _fix_my_import
+
 class MyApp(wx.App):
 
     kar_exts = ('.cdg', '.kar')
@@ -82,8 +102,10 @@ class MyApp(wx.App):
 
     def init_frame(self):
         # Get stuff from the XRC
+        #import pdb
+        #pdb.set_trace()
         self.frm = self.res.LoadFrame(None, 'emptyorch_frame') 
- 
+
         self.media_panel = xrc.XRCCTRL(self.frm, 'media_panel')
         self.playlist_panel = xrc.XRCCTRL(self.frm, 'Playlist_panel')
         self.slider = xrc.XRCCTRL(self.frm, 'slider')
@@ -188,6 +210,10 @@ class MyApp(wx.App):
                 print "Playing... Shutting down."
                 self.player.shutdown()
 
+            del self.player
+            self.player = None
+
+
         if archive:
             self.player = cdgPlayer(
                 path, 
@@ -206,6 +232,7 @@ class MyApp(wx.App):
        
         self.player.Play()
         if os.name == 'nt':
+            print "PLAYER:", self.player
             self.player.WaitForPlayer()
             #self.player.shutdown()
         else:
