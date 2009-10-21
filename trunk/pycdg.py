@@ -793,7 +793,11 @@ class cdgPlayer(pykPlayer):
         return cdgFilePath, soundFilePath
 
     def _writeZipMember(self, zippath, member, outpath):
-        f = open(os.path.join(outpath, member), 'w')
+        temppath = os.path.join(outpath, member)
+        tempdir = os.path.dirname(temppath)
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir)
+        f = open(temppath, 'w')
         try:
             zip = zipfile.ZipFile(zippath)
             try:
