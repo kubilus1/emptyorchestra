@@ -501,7 +501,13 @@ class cdgPlayer(pykPlayer):
     def shutdown(self):
         # This will be called by the pykManager to shut down the thing
         # immediately.
-        pygame.mixer.music.stop()
+        #pygame.mixer.music.stop()
+        #pygame.mixer.music = None
+        if os.name == 'nt':
+            # Must load another mp3 for pygame since it never wants to
+            # release the file and we want to cleanup the temp dir.
+            pygame.mixer.music.load('fake.mp3')
+        pygame.mixer.quit()
 
         # Make sure our surfaces are deallocated before we call up to
         # CloseDisplay(), otherwise bad things can happen.
@@ -513,7 +519,7 @@ class cdgPlayer(pykPlayer):
         if self.tempdir:
             shutil.rmtree(self.tempdir)
             self.tempdir = None
-
+            
     def doStuff(self):
         pykPlayer.doStuff(self)
         
