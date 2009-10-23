@@ -204,6 +204,17 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         m.save()
         print "Updated data."
 
+
+class MusicList(EditMediaList):
+    def setupData(self, datafile):
+        self.datafile = datafile
+        self.LoadData(datafile) 
+
+    def SetVirtualData(self, *args, **kwds):
+        EditMediaList.SetVirtualData(self, *args, **kwds)
+        self.SaveData(self.datafile)
+
+
 class Playlist_list(gizmos.EditableListBox):
 #class Playlist_list(wx.ListCtrl):
     def __init__(self, *args, **kwds):
