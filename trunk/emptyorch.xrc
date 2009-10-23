@@ -80,7 +80,7 @@
             <object class="wxBoxSizer">
               <orient>wxVERTICAL</orient>
               <object class="sizeritem">
-                <object class="wxListCtrl" name="media_list" subclass="eo_widgets.EditMediaList">
+                <object class="wxListCtrl" name="media_list" subclass="eo_widgets.MusicList">
                   <bg>#E6E6FA</bg>
                   <style>wxLC_REPORT|wxLC_SORT_ASCENDING|wxLC_VIRTUAL</style>
                 </object>
