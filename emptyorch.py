@@ -170,7 +170,7 @@ class MyApp(wx.App):
         #self.Bind(wx.EVT_TIMER, self.onTimer)
         #self.timer.Start(100)
 
-        self.media_list.LoadData('.musicdata')
+        self.media_list.setupData('.musicdata')
         self.frm.Show()
 
     def OnDoSearch(self, evt):
@@ -184,6 +184,8 @@ class MyApp(wx.App):
     def OnSearchCancel(self, evt):
         print "Cancel search"
         self.media_list.ClearSearch()
+        self.search.SetValue('')
+
 
     def OnMenu_open_menu(self, evt):
         dlg = wx.FileDialog(self.frm, message="Choose a media file",
@@ -345,17 +347,23 @@ class MyApp(wx.App):
         title = ''
         genre = ''
 
-        name, ext = os.path.splitext(filepath)
+        musicfile = self.getMusicForCdg(filepath)
+        
+        name, ext = os.path.splitext(musicfile)
+        print "Name:", name
+        print "Ext:", ext
         if ext == '.mp3':
+            print "MP3"
             try:
-                eid = EasyID3(filepath)
+                eid = EasyID3(musicfile)
                 artist = eid.get('artist', '')[0]
                 title = eid.get('title', '')[0]
                 genre = eid.get('genre', ['karaoke'])[0]
+                print "Got: (%s, %s, %s)" % (artist, title, genre)
             except ID3NoHeaderError:
-                print "No ID Header for", filepath
+                print "No ID Header for", musicfile
         elif ext == '.ogg':
-            audio = OggVorbis(filepath)
+            audio = OggVorbis(musicfile)
             artist = audio.get('artist', '')[0]
             title = audio.get('title', '')[0]
             genre = audio.get('genre', ['karaoke'])[0]
@@ -415,17 +423,21 @@ class MyApp(wx.App):
 
     def getFileInfo(self, filepath, fileinfo, titlere):
         genre = ''
+        print "Get File Info from Info"
         artist, title = self.getFileInfoFromInfo(filepath, fileinfo)
         if not artist or not title:
+            print "Nope.  Get Info From Meta"
             artist, title, genre = self.getFileInfoFromMeta(filepath)
         if not artist or not title and titlere:
+            print "Nope.  Get Info From Regex"
             artist, title = self.getFileInfoFromRegex(filepath, titlere)
         if not artist or not title:
+            print "Nope.  Get Info From Guess"
             artist, title = self.getFileInfoFromGuess(filepath)
         return artist, title, genre
 
-    def appendSong(self, filepath, songlist, fileinfo, titlere=None):
-        name, ext = os.path.splitext(filepath)
+    def getMusicForCdg(self, cdgpath):
+        name, ext = os.path.splitext(cdgpath)
         candidates = glob.glob("%s.*" % name)
         musicfile = None
         for candidate in candidates:
@@ -433,8 +445,12 @@ class MyApp(wx.App):
             if ext.lower() in self.media_exts:
                 musicfile = candidate
                 break
+        return musicfile
 
+    def appendSong(self, filepath, songlist, fileinfo, titlere=None):
+        musicfile = self.getMusicForCdg(filepath)
         if musicfile:
+            name, ext = os.path.splitext(musicfile)
             artist, title, genre = self.getFileInfo(
                     filepath, 
                     fileinfo,
