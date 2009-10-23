@@ -64,11 +64,44 @@ class SortVirtList(
         self.itemIndexMap = self.itemDataMap.keys()
         self.SetItemCount(len(self.itemDataMap))
 
+    def estimateLens(self):
+        headers = self.headers
+        rows = self.rows
+
+        buffer = 5
+        rowrange = range(len(rows[0]))
+
+        headlens = []
+        for head in headers:
+            headlens.append(len(headers) + 5)
+
+        rowtots = []
+        for i in rowrange:
+            rowtots.append(0)
+
+        rownums = []
+        for i in rowrange:
+            rownums.append(1)
+
+        for row in rows:
+            for i in rowrange:
+                ilen = len(row[i])
+                if ilen > headlens[i]:
+                    rowtots[i] += ilen
+                    rownums[i] += 1
+        
+        charWidth = self.GetCharWidth()
+        for i in rowrange:
+            self.SetColumnWidth(i, (charWidth * max(
+                (rowtots[i] / rownums[i]),
+                headlens[i]
+            )))
+
     def SetData(self, headers, rows):
         self.ClearAll()
         self.headers = headers
         self.rows.extend(rows)
-
+        
         for i in range(len(headers)):
             self.InsertColumn(i, headers[i])
             self.SetColumnWidth(i, wx.LIST_AUTOSIZE)
@@ -77,9 +110,10 @@ class SortVirtList(
         end = start + len(rows)
         for i in range(start, end):
             self.itemDataMap[i] = self.rows[i]
-
+            
         self.itemIndexMap = self.itemDataMap.keys()
         self.SetItemCount(len(self.itemDataMap))
+        self.estimateLens()
 
     def SaveData(self, filename):
         print "Saving %s" % filename
@@ -213,7 +247,6 @@ class MusicList(EditMediaList):
     def SetVirtualData(self, *args, **kwds):
         EditMediaList.SetVirtualData(self, *args, **kwds)
         self.SaveData(self.datafile)
-
 
 class Playlist_list(gizmos.EditableListBox):
 #class Playlist_list(wx.ListCtrl):
