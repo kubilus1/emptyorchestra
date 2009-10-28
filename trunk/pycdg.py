@@ -503,10 +503,6 @@ class cdgPlayer(pykPlayer):
         # immediately.
         #pygame.mixer.music.stop()
         #pygame.mixer.music = None
-        if os.name == 'nt':
-            # Must load another mp3 for pygame since it never wants to
-            # release the file and we want to cleanup the temp dir.
-            pygame.mixer.music.load('fake.mp3')
         pygame.mixer.quit()
 
         # Make sure our surfaces are deallocated before we call up to
