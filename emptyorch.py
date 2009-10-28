@@ -19,16 +19,19 @@ from mutagen.oggvorbis import OggVorbis
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3NoHeaderError
 
+import pygame
+
 import emptyorch_xrc
+from eo_widgets import Playlist_list 
 
 from pycdg import cdgPlayer
 from pykconstants import *
 
-from eo_widgets import Playlist_list 
 
 APPDIR = sys.path[0]
 if os.path.isfile(APPDIR): 
   APPDIR = os.path.dirname(APPDIR)
+print "EO APPDIR:", APPDIR
 
 def _fix_my_import(name):
     try:
@@ -50,6 +53,17 @@ def _fix_my_import(name):
 if os.name == "nt":
     xrc._my_import = _fix_my_import
 
+
+class cdgAppPlayer(cdgPlayer):
+    def shutdown(self):
+        if os.name == 'nt':
+            # Must load another mp3 for pygame since it never wants to
+            # release the file and we want to cleanup the temp dir.
+            pygame.mixer.music.load(os.path.join(APPDIR, 'fake.mp3'))
+
+        cdgPlayer.shutdown(self)
+
+
 class MyApp(wx.App):
 
     kar_exts = ('.cdg', '.kar')
@@ -63,6 +77,7 @@ class MyApp(wx.App):
         self.res = xrc.XmlResource(os.path.join(APPDIR, 'emptyorch.xrc'))
         self.get_settings()
         self.init_frame()
+
         return True
 
     def OnExit(self):
@@ -74,18 +89,40 @@ class MyApp(wx.App):
     #    self.timer.Stop()
 
     def get_settings(self):
-        config = ConfigParser.ConfigParser()
-        config.read('emptyorch.cfg')
-        self.delay = int(config.get('cdg', 'delay'))
-        self.cdgSize = eval(config.get('cdg', 'size'))
-        self.cdgPos = eval(config.get('cdg', 'pos'))
-        self.fullscreen = eval(config.get('cdg', 'fullscreen'))
-        self.appSize = eval(config.get('app', 'size'))
-        self.appPos = eval(config.get('app', 'pos'))
+        # Get the user paths
+        self.homedir = os.path.expanduser('~')
+        self.eo_dir = os.path.join(self.homedir, '.emptyorch')
+        if not os.path.exists(self.eo_dir):
+            os.makedirs(self.eo_dir)
+        self.settings_path = os.path.join(
+            self.eo_dir,
+            'emptyorch.cfg'
+        )
+        self.songdb_path = os.path.join(
+            self.eo_dir,
+            '.musicdata'
+        )
+        # Process the settings file
+        if os.path.exists(self.settings_path):
+            config = ConfigParser.ConfigParser()
+            config.read(self.settings_path)
+            self.delay = int(config.get('cdg', 'delay')) 
+            self.cdgSize = eval(config.get('cdg', 'size'))
+            self.cdgPos = eval(config.get('cdg', 'pos')) 
+            self.fullscreen = eval(config.get('cdg', 'fullscreen')) 
+            self.appSize = eval(config.get('app', 'size'))
+            self.appPos = eval(config.get('app', 'pos'))
+        else:
+            self.delay = 0
+            self.cdgSize = (640, 480)
+            self.cdgPos = (0, 0)
+            self.fullscreen = False
+            self.appSize = (640, 480)
+            self.appPos = (0, 0)
+            self.set_settings()
 
     def set_settings(self):
         config = ConfigParser.ConfigParser()
-        #config.read('emptyorch.cfg')
         config.add_section('cdg')
         config.set('cdg', 'delay', str(self.delay))
         config.set('cdg', 'size', str(self.cdgSize))
@@ -94,7 +131,7 @@ class MyApp(wx.App):
         config.add_section('app')
         config.set('app', 'size', str(self.appSize))
         config.set('app', 'pos', str(self.appPos))
-        f = open('emptyorch.cfg', 'wb')
+        f = open(self.settings_path, 'wb')
         try:
             config.write(f)
         finally:
@@ -170,7 +207,7 @@ class MyApp(wx.App):
         #self.Bind(wx.EVT_TIMER, self.onTimer)
         #self.timer.Start(100)
 
-        self.media_list.setupData('.musicdata')
+        self.media_list.setupData(self.songdb_path)
         self.frm.Show()
 
     def OnDoSearch(self, evt):
@@ -217,7 +254,7 @@ class MyApp(wx.App):
 
 
         if archive:
-            self.player = cdgPlayer(
+            self.player = cdgAppPlayer(
                 path, 
                 size = self.cdgSize,
                 fullscreen = self.fullscreen,
@@ -225,7 +262,7 @@ class MyApp(wx.App):
                 offsetTime = self.delay
             )
         else:
-            self.player = cdgPlayer(
+            self.player = cdgAppPlayer(
                 path, 
                 size = self.cdgSize, 
                 fullscreen = self.fullscreen,
@@ -348,25 +385,25 @@ class MyApp(wx.App):
         genre = ''
 
         musicfile = self.getMusicForCdg(filepath)
-        
-        name, ext = os.path.splitext(musicfile)
-        print "Name:", name
-        print "Ext:", ext
-        if ext == '.mp3':
-            print "MP3"
-            try:
-                eid = EasyID3(musicfile)
-                artist = eid.get('artist', '')[0]
-                title = eid.get('title', '')[0]
-                genre = eid.get('genre', ['karaoke'])[0]
-                print "Got: (%s, %s, %s)" % (artist, title, genre)
-            except ID3NoHeaderError:
-                print "No ID Header for", musicfile
-        elif ext == '.ogg':
-            audio = OggVorbis(musicfile)
-            artist = audio.get('artist', '')[0]
-            title = audio.get('title', '')[0]
-            genre = audio.get('genre', ['karaoke'])[0]
+        if musicfile:
+            name, ext = os.path.splitext(musicfile)
+            print "Name:", name
+            print "Ext:", ext
+            if ext == '.mp3':
+                print "MP3"
+                try:
+                    eid = EasyID3(musicfile)
+                    artist = eid.get('artist', '')[0]
+                    title = eid.get('title', '')[0]
+                    genre = eid.get('genre', ['karaoke'])[0]
+                    print "Got: (%s, %s, %s)" % (artist, title, genre)
+                except ID3NoHeaderError:
+                    print "No ID Header for", musicfile
+            elif ext == '.ogg':
+                audio = OggVorbis(musicfile)
+                artist = audio.get('artist', '')[0]
+                title = audio.get('title', '')[0]
+                genre = audio.get('genre', ['karaoke'])[0]
 
         return artist, title, genre
 
@@ -577,7 +614,7 @@ class MyApp(wx.App):
     def fill_list(self, data):
         headers = ['Artist', 'Title', 'Genre', 'Type', 'Path', 'Archive']
         self.media_list.SetData(headers, data)
-        self.media_list.SaveData('.musicdata')
+        self.media_list.SaveData(self.songdb_path)
 
 if __name__ == "__main__":
     app = MyApp(False)
