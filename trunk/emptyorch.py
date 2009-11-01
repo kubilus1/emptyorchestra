@@ -23,6 +23,7 @@ import pygame
 
 import emptyorch_xrc
 from eo_widgets import Playlist_list 
+from eo_print import SongPrinter, Printer
 
 from pycdg import cdgPlayer
 from pykconstants import *
@@ -77,7 +78,6 @@ class MyApp(wx.App):
         self.res = xrc.XmlResource(os.path.join(APPDIR, 'emptyorch.xrc'))
         self.get_settings()
         self.init_frame()
-
         return True
 
     def OnExit(self):
@@ -103,7 +103,7 @@ class MyApp(wx.App):
             '.musicdata'
         )
         # Process the settings file
-        if os.path.exists(self.settings_path):
+        if os.path.isfile(self.settings_path):
             config = ConfigParser.ConfigParser()
             config.read(self.settings_path)
             self.delay = int(config.get('cdg', 'delay')) 
@@ -122,6 +122,7 @@ class MyApp(wx.App):
             self.set_settings()
 
     def set_settings(self):
+        print "Set_Settings"
         config = ConfigParser.ConfigParser()
         config.add_section('cdg')
         config.set('cdg', 'delay', str(self.delay))
@@ -176,6 +177,9 @@ class MyApp(wx.App):
         self.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnDoSearch, self.search)
         self.Bind(wx.EVT_TEXT_ENTER, self.OnDoSearch, self.search)
         self.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self.OnSearchCancel, self.search)
+        self.Bind(wx.EVT_MENU, self.OnMenu_Print, id=xrc.XRCID('Print'))
+        self.Bind(wx.EVT_MENU, self.OnMenu_PrintPreview, id=xrc.XRCID('PrintPreview'))
+        self.Bind(wx.EVT_MENU, self.OnMenu_PageSetup, id=xrc.XRCID('PageSetup'))
 
         # Add some special controls
         try:
@@ -208,6 +212,9 @@ class MyApp(wx.App):
         #self.timer.Start(100)
 
         self.media_list.setupData(self.songdb_path)
+        #self.printer = Printer(self.frm)
+        self.printer = SongPrinter()
+        print "Songs:", len(self.media_list.rows)
         self.frm.Show()
 
     def OnDoSearch(self, evt):
@@ -223,7 +230,6 @@ class MyApp(wx.App):
         self.media_list.ClearSearch()
         self.search.SetValue('')
 
-
     def OnMenu_open_menu(self, evt):
         dlg = wx.FileDialog(self.frm, message="Choose a media file",
                             defaultDir=os.getcwd(), defaultFile="",
@@ -234,6 +240,24 @@ class MyApp(wx.App):
             print "Loading:", path
         dlg.Destroy()
         
+    def OnMenu_Print(self, evt):
+        self.printer.Print(self.media_list.rows, "Songs")
+
+    def OnMenu_PrintPreview(self, evt):
+        data = """Foo
+        bar
+        barg
+
+        baz
+        """
+        #self.printer.PreviewText(data, "FOO")
+        self.printer.PreviewText(self.media_list.rows, "Songs")
+
+    def OnMenu_PageSetup(self, evt):
+        # Replace with event handler code
+        print "OnMenu_PageSetup()"
+        self.printer.PageSetup()
+
     def doLoadFile(self, path, archive=None):
         print "Load File:", path
         if self.playthread:
@@ -393,8 +417,8 @@ class MyApp(wx.App):
                 print "MP3"
                 try:
                     eid = EasyID3(musicfile)
-                    artist = eid.get('artist', '')[0]
-                    title = eid.get('title', '')[0]
+                    artist = eid.get('artist', [''])[0]
+                    title = eid.get('title', [''])[0]
                     genre = eid.get('genre', ['karaoke'])[0]
                     print "Got: (%s, %s, %s)" % (artist, title, genre)
                 except ID3NoHeaderError:
