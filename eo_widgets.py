@@ -3,6 +3,7 @@ import re
 import sys
 import glob
 import pickle
+import locale
 
 import wx
 import wx.media
@@ -171,11 +172,40 @@ class SortVirtList(
     def SortItems(self,sorter=cmp):
         print "SortItems"
         items = list(self.itemDataMap.keys())
+        #items = list(map(
+        #    lambda x: x.lower(),
+        #    self.itemDataMap.keys()
+        #))
         items.sort(sorter)
         self.itemIndexMap = items
         
         # redraw the list
         self.Refresh()
+
+    def GetColumnSorter(self):
+        return self.__InColSorter
+
+    def __InColSorter(self, key1, key2):
+        col = self._col
+        ascending = self._colSortFlag[col]
+        item1 = self.itemDataMap[key1][col].lower()
+        item2 = self.itemDataMap[key2][col].lower()
+
+        #--- Internationalization of string sorting with locale module
+        if type(item1) == type('') or type(item2) == type(''):
+            cmpVal = locale.strcoll(str(item1), str(item2))
+        else:
+            cmpVal = cmp(item1, item2)
+        #---
+
+        # If the items are equal then pick something else to make the sort value unique
+        if cmpVal == 0:
+            cmpVal = apply(cmp, self.GetSecondarySortValues(col, key1, key2))
+
+        if ascending:
+            return cmpVal
+        else:
+            return -cmpVal
 
     # Used by the ColumnSorterMixin, see wx/lib/mixins/listctrl.py
     def GetListCtrl(self):
