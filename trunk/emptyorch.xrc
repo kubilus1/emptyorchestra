@@ -10,14 +10,35 @@
             <events>EVT_MENU</events>
           </XRCED>
         </object>
-        <object class="wxMenuItem">
-          <label>Quit</label>
-        </object>
+        
         <label>File</label>
+        <object class="separator"/>
         <help>Do some file things!</help>
         <XRCED>
           <events>EVT_MENU_OPEN</events>
         </XRCED>
+        <object class="wxMenuItem" name="Print">
+          <label>Print</label>
+          <XRCED>
+            <events>EVT_MENU</events>
+          </XRCED>
+        </object>
+        <object class="wxMenuItem" name="PrintPreview">
+          <label>Print Preview</label>
+          <XRCED>
+            <events>EVT_MENU</events>
+          </XRCED>
+        </object>
+        <object class="wxMenuItem" name="PageSetup">
+          <label>Page Setup</label>
+          <XRCED>
+            <events>EVT_MENU</events>
+          </XRCED>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="Quit">
+          <label>Quit</label>
+        </object>
       </object>
       <object class="wxMenu">
         <label>Edit</label>
@@ -64,7 +85,6 @@
                 <option>1</option>
                 <flag>wxEXPAND|wxGROW</flag>
               </object>
-              
               <object class="sizeritem">
                 <object class="wxListCtrl" name="queue_list" subclass="eo_widgets.SortVirtList">
                   <size>0,0</size>
