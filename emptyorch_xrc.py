@@ -38,6 +38,9 @@ class xrcemptyorch_frame(wx.Frame):
         # Define variables for the controls, bind event handlers
 
         self.Bind(wx.EVT_MENU, self.OnMenu_open_menu, id=xrc.XRCID('open_menu'))
+        self.Bind(wx.EVT_MENU, self.OnMenu_Print, id=xrc.XRCID('Print'))
+        self.Bind(wx.EVT_MENU, self.OnMenu_PrintPreview, id=xrc.XRCID('PrintPreview'))
+        self.Bind(wx.EVT_MENU, self.OnMenu_PageSetup, id=xrc.XRCID('PageSetup'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_choose_btn, id=xrc.XRCID('choose_btn'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_playsel_btn, id=xrc.XRCID('playsel_btn'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_addplay_btn, id=xrc.XRCID('addplay_btn'))
@@ -56,6 +59,24 @@ class xrcemptyorch_frame(wx.Frame):
         # Replace with event handler code
         print "OnMenu_open_menu()"
 #!XRCED:end-block:xrcemptyorch_frame.OnMenu_open_menu        
+
+#!XRCED:begin-block:xrcemptyorch_frame.OnMenu_Print
+    def OnMenu_Print(self, evt):
+        # Replace with event handler code
+        print "OnMenu_Print()"
+#!XRCED:end-block:xrcemptyorch_frame.OnMenu_Print        
+
+#!XRCED:begin-block:xrcemptyorch_frame.OnMenu_PrintPreview
+    def OnMenu_PrintPreview(self, evt):
+        # Replace with event handler code
+        print "OnMenu_PrintPreview()"
+#!XRCED:end-block:xrcemptyorch_frame.OnMenu_PrintPreview        
+
+#!XRCED:begin-block:xrcemptyorch_frame.OnMenu_PageSetup
+    def OnMenu_PageSetup(self, evt):
+        # Replace with event handler code
+        print "OnMenu_PageSetup()"
+#!XRCED:end-block:xrcemptyorch_frame.OnMenu_PageSetup        
 
 #!XRCED:begin-block:xrcemptyorch_frame.OnButton_choose_btn
     def OnButton_choose_btn(self, evt):
