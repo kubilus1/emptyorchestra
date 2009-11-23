@@ -8,21 +8,37 @@ class SongPrinter(HtmlEasyPrinting):
 
     def GetHtmlText(self, data):
         numrows = 64 
-        html_text = "<table>"
-        data.sort()
-        datalen = len(data)
-        for i in range(0, datalen, numrows):
-            print i
-            html_text = "%s%s" % (html_text, "<tr>")
-            subtable = self.SongSubTable(
-                data[i:min(datalen-1,i+numrows)]
-            )
-            html_text = "%s<td>%s</td>" % (
-                html_text,
-                subtable,
-            )
-            html_text = "%s</tr>" % html_text
-        html_text = "%s</table>" % html_text
+        html_text = ""
+        data.sort(lambda a, b: cmp(a[0].lower(), b[0].lower()))
+        
+        artist = ""
+        for row in data:
+            if artist.lower() != row[0].lower():
+                artist = row[0]
+                html_text = "%s<br><b>%s:</b><br>%s" % (
+                        html_text,
+                        artist,
+                        row[1]
+                )
+            else:
+                html_text = ", ".join((
+                    html_text,
+                    row[1]
+                ))
+
+        #datalen = len(data)
+        #for i in range(0, datalen, numrows):
+        #    print i
+        #    html_text = "%s%s" % (html_text, "<tr>")
+        #    subtable = self.SongSubTable(
+        #        data[i:min(datalen-1,i+numrows)]
+        #    )
+        #    html_text = "%s<td>%s</td>" % (
+        #        html_text,
+        #        subtable,
+        #    )
+        #    html_text = "%s</tr>" % html_text
+        #html_text = "%s</table>" % html_text
         return html_text
 
     def SongSubTable(self, data):
