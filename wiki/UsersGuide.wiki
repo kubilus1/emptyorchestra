@@ -48,6 +48,6 @@ Tap the right arrow to have the lyrics come up sooner, tap the left arrow to hav
 
 Emptyorchestra will automatically preserve settings from the interface.  This would include:
 
-* Karaoke window size and position
-* Fullscreen display
-* Lyric offset
+ * Karaoke window size and position
+ * Fullscreen display
+ * Lyric offset
