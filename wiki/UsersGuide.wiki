@@ -4,6 +4,8 @@
 
 EmptyOrchestra turns your *Nix or Windows PC into a karaoke jukebox!
 
+<wiki:toc max_depth="2" />
+
 =Usage=
 
 ==Finding Karaoke Files==
