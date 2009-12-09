@@ -1,0 +1,28 @@
+#summary Explain Usage of Emptyorchestra
+
+= Emptyorchestra Users Guide =
+
+EmptyOrchestra turns your *Nix or Windows PC into a karaoke jukebox!
+
+=Usage=
+
+==Finding Karaoke Files==
+Using the left top pane, browse to the directory containing karaoke files and press 'Scan'.  This will recursively search for files from the chosen location.  Karaoke files will showup in the right hand media pane.
+
+Scanning multiple directories will add to the songs found in the media pane.  Scanning the same directory more than once will not add duplicates in the media pane.
+
+The found songs are automatically saved.
+
+==Starting Over==
+
+If you would like to start your karaoke database over, remove the .musicdata file in the directory that you ran EmptyOrchestra from.
+
+==Searching Songs==
+
+Underneath the media pane in the right side of the screen, a user may type in a search term.  Pressing enter will filter the media pane.  Pressing the 'x' on the search will un-filter the media pane.
+
+==Using the Playlist==
+
+After highlighting songs in the media pane, pressing 'Add to Playlist' will copy the chosen songs into the playlist in the lower right section of the screen.
+
+The user may adjust the order of the playlist by clicking on the up or down arrow buttons above the playlist.  Clicking the 'x' button on the playlist will remove the highlighted song from the playlist.
