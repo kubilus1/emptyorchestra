@@ -354,13 +354,6 @@ class cdgPlayer(pykPlayer):
             print "Set end event"
             pygame.mixer.music.set_endevent(pygame.USEREVENT)
 
-            # Account for the size of the playback buffer in the lyrics
-            # display.  Assume that the buffer will be mostly full.  On a
-            # slower computer that's struggling to keep up, this may not
-            # be the right amount of delay, but it should usually be
-            # pretty close.
-            #self.InternalOffsetTime = -1000
-
         else:
             # Don't play anything.
             self.InternalOffsetTime = 0
