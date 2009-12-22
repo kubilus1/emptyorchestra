@@ -10,7 +10,6 @@
             <events>EVT_MENU</events>
           </XRCED>
         </object>
-        
         <label>File</label>
         <object class="separator"/>
         <help>Do some file things!</help>
@@ -155,9 +154,7 @@
               <object class="wxBoxSizer">
                 <orient>wxVERTICAL</orient>
                 <object class="sizeritem">
-                  <object class="wxStaticText" name="st_file">
-                    <label>foo</label>
-                  </object>
+                  <object class="wxStaticText" name="st_file"/>
                   <flag>wxALL</flag>
                   <border>5</border>
                 </object>
@@ -261,5 +258,8 @@
     <size>1000</size>
     <title>Empty Orchestra</title>
     <centered>1</centered>
+    <XRCED>
+      <events>EVT_CLOSE</events>
+    </XRCED>
   </object>
 </resource>
