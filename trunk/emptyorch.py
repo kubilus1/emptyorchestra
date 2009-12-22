@@ -85,6 +85,7 @@ class MyApp(wx.App):
             self.cdgSize = self.player.displaySize
             self.fullscreen = self.player.fullScreen
             self.delay = self.player.InternalOffsetTime
+
         self.set_settings()       
     #    self.timer.Stop()
 
@@ -110,15 +111,16 @@ class MyApp(wx.App):
             self.cdgSize = eval(config.get('cdg', 'size'))
             self.cdgPos = eval(config.get('cdg', 'pos')) 
             self.fullscreen = eval(config.get('cdg', 'fullscreen')) 
-            self.appSize = eval(config.get('app', 'size'))
-            self.appPos = eval(config.get('app', 'pos'))
+            print config.get('app', 'size')
+            self.eoAppSize = eval(config.get('app', 'size'))
+            self.eoAppPos = eval(config.get('app', 'pos'))
         else:
             self.delay = 0
             self.cdgSize = (640, 480)
             self.cdgPos = (0, 0)
             self.fullscreen = False
-            self.appSize = (640, 480)
-            self.appPos = (0, 0)
+            self.eoAppSize = (640, 480)
+            self.eoAppPos = (0, 0)
             self.set_settings()
 
     def set_settings(self):
@@ -130,8 +132,8 @@ class MyApp(wx.App):
         config.set('cdg', 'pos', str(self.cdgPos))
         config.set('cdg', 'fullscreen', str(self.fullscreen))
         config.add_section('app')
-        config.set('app', 'size', str(self.appSize))
-        config.set('app', 'pos', str(self.appPos))
+        config.set('app', 'size', str(self.eoAppSize))
+        config.set('app', 'pos', str(self.eoAppPos))
         f = open(self.settings_path, 'wb')
         try:
             config.write(f)
@@ -157,7 +159,8 @@ class MyApp(wx.App):
         self.search = wx.SearchCtrl(self.frm, -1, "", style=wx.TE_PROCESS_ENTER)
         self.search.ShowCancelButton(True)
         self.res.AttachUnknownControl("searcher_ctrl", self.search)
-
+        
+        wx.EVT_CLOSE(self.frm, self.OnFrame_Close)
         self.Bind(wx.EVT_MENU, self.OnMenu_open_menu, id=xrc.XRCID('open_menu'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_choose_btn, id=xrc.XRCID('choose_btn'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_playsel_btn, id=xrc.XRCID('playsel_btn'))
@@ -216,6 +219,16 @@ class MyApp(wx.App):
         self.printer = SongPrinter()
         print "Songs:", len(self.media_list.rows)
         self.frm.Show()
+        print "SET SIZE :", self.eoAppSize
+        self.frm.SetSizeWH(self.eoAppSize[0], self.eoAppSize[1])
+        self.frm.SetPosition(self.eoAppPos)
+
+    def OnFrame_Close(self, evt):
+        print "Closing..."
+    #    self.timer.Stop()
+        self.eoAppSize = self.frm.GetSizeTuple()
+        self.eoAppPos = self.frm.GetPositionTuple()
+        self.frm.Destroy()
 
     def OnDoSearch(self, evt):
         val = self.search.GetValue()
@@ -260,6 +273,7 @@ class MyApp(wx.App):
 
     def doLoadFile(self, path, archive=None):
         print "Load File:", path
+        self.st_file.SetLabel(os.path.basename(path))
         if self.playthread:
             self.player.shutdown()
             self.playthread.join()
