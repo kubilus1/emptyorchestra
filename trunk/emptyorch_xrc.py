@@ -53,6 +53,7 @@ class xrcemptyorch_frame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnButton_next_btn, id=xrc.XRCID('next_btn'))
         self.Bind(wx.EVT_SCROLL, self.OnScroll_volume_sl, id=xrc.XRCID('volume_sl'))
         self.Bind(wx.EVT_SCROLL, self.OnScroll_volume_sl, id=xrc.XRCID('volume_sl'))
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 #!XRCED:begin-block:xrcemptyorch_frame.OnMenu_open_menu
     def OnMenu_open_menu(self, evt):
@@ -149,6 +150,12 @@ class xrcemptyorch_frame(wx.Frame):
         # Replace with event handler code
         print "OnScroll_volume_sl()"
 #!XRCED:end-block:xrcemptyorch_frame.OnScroll_volume_sl        
+
+#!XRCED:begin-block:xrcemptyorch_frame.OnClose
+    def OnClose(self, evt):
+        # Replace with event handler code
+        print "OnClose()"
+#!XRCED:end-block:xrcemptyorch_frame.OnClose        
 
 
 
