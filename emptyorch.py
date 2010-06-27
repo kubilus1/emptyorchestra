@@ -28,11 +28,7 @@ from eo_print import SongPrinter, Printer
 from pycdg import cdgPlayer
 from pykconstants import *
 
-
-APPDIR = sys.path[0]
-if os.path.isfile(APPDIR): 
-  APPDIR = os.path.dirname(APPDIR)
-print "EO APPDIR:", APPDIR
+DATADIR = os.path.dirname(emptyorch_xrc.__file__)
 
 def _fix_my_import(name):
     try:
@@ -60,7 +56,7 @@ class cdgAppPlayer(cdgPlayer):
         if os.name == 'nt':
             # Must load another mp3 for pygame since it never wants to
             # release the file and we want to cleanup the temp dir.
-            pygame.mixer.music.load(os.path.join(APPDIR, 'fake.mp3'))
+            pygame.mixer.music.load(os.path.join(DATADIR, 'fake.mp3'))
 
         cdgPlayer.shutdown(self)
 
@@ -75,7 +71,7 @@ class MyApp(wx.App):
 
     def OnInit(self):
         # Get the XRC Resource
-        self.res = xrc.XmlResource(os.path.join(APPDIR, 'emptyorch.xrc'))
+        self.res = xrc.XmlResource(os.path.join(DATADIR, 'emptyorch.xrc'))
         self.get_settings()
         self.init_frame()
         return True
