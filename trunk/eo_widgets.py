@@ -215,6 +215,10 @@ class SortVirtList(
 class EditMediaList(SortVirtList, listmix.TextEditMixin):
 
     _created = False
+    _origdata = None
+    _origrow = -1
+    _dirty = False
+    _tabclose = False
 
     def __init__(self):
         print "EditMediaList Init"
@@ -252,11 +256,37 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
             self.curRow = -1
             self.curCol = -1
 
+    def OnChar(self, event):
+        keycode = event.GetKeyCode()
+        if keycode == wx.WXK_TAB:
+            self._tabclose = True
+        else:
+            self._tabclose = False
+        listmix.TextEditMixin.OnChar(self, event)
+
+    def OpenEditor(self, col, row): 
+        if row != self._origrow:
+            self._origrow = self.itemIndexMap[row]
+            self._origdata = str(self.itemDataMap[self._origrow])
+        listmix.TextEditMixin.OpenEditor(self, col, row)
+
     def SetVirtualData(self, item, col, data):
-        #SortVirtList.SetVirtualData(self, item, col, data)
-        #self.SetStringItem(self, item, col, data)
+        print "Set Virtual Data"
         index=self.itemIndexMap[item]
         self.itemDataMap[index][col] = data
+        
+        if self._tabclose:
+            print "Same row"
+            return
+        
+        if self._origdata == str(self.itemDataMap[index]):
+            print "Data did not change."
+            return
+
+        print "Data changed!"
+        self._dirty = True
+        #SortVirtList.SetVirtualData(self, item, col, data)
+        #self.SetStringItem(self, item, col, data)
         artist = self.itemDataMap[index][0]
         title = self.itemDataMap[index][1]
         genre = self.itemDataMap[index][2]
@@ -299,7 +329,9 @@ class MusicList(EditMediaList):
 
     def SetVirtualData(self, *args, **kwds):
         EditMediaList.SetVirtualData(self, *args, **kwds)
-        self.SaveData(self.datafile)
+        if self._dirty:
+            self.SaveData(self.datafile)
+        self._dirty = False
 
 class Playlist_list(gizmos.EditableListBox):
 #class Playlist_list(wx.ListCtrl):
