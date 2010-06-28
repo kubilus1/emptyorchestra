@@ -326,6 +326,10 @@ class MyApp(wx.App):
         self.addToPlaylist()
 
     def OnButton_playsel_btn(self, evt):
+        filetype = None
+        path = None
+        archive = None
+
         index = -1
         for i in range(self.media_list.GetSelectedItemCount()):
             index = self.media_list.GetNextItem(
@@ -337,10 +341,17 @@ class MyApp(wx.App):
             archive = self.media_list.GetItem(index, 5).GetText()
             break
 
-        if filetype == '.zip':
-            self.doLoadFile(path, archive)
+        if filetype:
+            if filetype == '.zip':
+                self.doLoadFile(path, archive)
+            else:
+                self.doLoadFile(path)
         else:
-            self.doLoadFile(path)
+            dlg = wx.MessageDialog(self.frm, "No song selected.", "Error",  wx.OK | wx.ICON_ERROR)
+            try:
+                dlg.ShowModal()
+            finally:
+                dlg.Destroy()
 
     def addToPlaylist(self, data=None):
         index = -1
@@ -636,7 +647,6 @@ class MyApp(wx.App):
                     print "ZIP member %s compressed with unsupported type (%d)" % (
                         filename, info.compress_type
                     )
-
 
     def OnButton_choose_btn(self, evt):
         path = self.file_tree.GetPath()
