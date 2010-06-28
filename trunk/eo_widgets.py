@@ -221,6 +221,24 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         p = wx.PreListCtrl()
         self.PostCreate(p)
         self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftDClick)
+
+
+    def OnLeftDown(self, evt=None):
+        """ Only select with a single click """
+        if self.editor.IsShown():
+            self.CloseEditor()
+            
+        x,y = evt.GetPosition()
+        row,flags = self.HitTest((x,y))
+    
+        evt.Skip()
+        return
+
+    def OnLeftDClick(self, evt):
+        """ Call original click routine for double click """
+        listmix.TextEditMixin.OnLeftDown(self, evt)
 
     def OnCreate(self, event):
         print "EditMediaList OnCreate"
@@ -228,6 +246,11 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
             self._created = True
             listmix.TextEditMixin.__init__(self)
             SortVirtList.OnCreate(self, event)
+
+            # TextEditMixin contains bug making it impossible to select row 0.
+            # Fix this ...
+            self.curRow = -1
+            self.curCol = -1
 
     def SetVirtualData(self, item, col, data):
         #SortVirtList.SetVirtualData(self, item, col, data)
