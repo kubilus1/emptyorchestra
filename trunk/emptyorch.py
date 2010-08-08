@@ -149,6 +149,11 @@ class MyApp(wx.App):
         self.st_file = xrc.XRCCTRL(self.frm, 'st_file')
         self.file_tree = xrc.XRCCTRL(self.frm, 'file_tree')
         self.media_list = xrc.XRCCTRL(self.frm, 'media_list')
+        self.status_bar = xrc.XRCCTRL(self.frm, 'statusbar')
+        #print "STATUS BAR:", self.status_bar
+        #print help(self.frm.GetStatusBar)
+        #self.status_bar = self.frm.GetStatusBar()
+        #print "SB:", dir(sb)
         #self.queue_list = xrc.XRCCTRL(self.frm, 'queue_list')
 
         # Attach an unknown wxSearchCtrl
@@ -215,6 +220,7 @@ class MyApp(wx.App):
         self.printer = SongPrinter()
         print "Songs:", len(self.media_list.rows)
         self.frm.Show()
+        self.frm.SetStatusText("Songs: %s" % len(self.media_list.rows))
         print "SET SIZE :", self.eoAppSize
         self.frm.SetSizeWH(self.eoAppSize[0], self.eoAppSize[1])
         self.frm.SetPosition(self.eoAppPos)
@@ -541,11 +547,13 @@ class MyApp(wx.App):
             songlist.append([
                 artist, title, genre, ext, filepath, ''
             ])
+            print "Adding %s" % filepath
+            self.frm.SetStatusText("Adding %s by %s" % (title, artist))
 
     def findKaraoke(self, path):
         curRows = self.media_list.rows
         curPaths = map(lambda x: x[4], curRows)
-        print "Scanning: ", path
+        self.frm.SetStatusText("Scanning: %s" % path)
         #self.doLoadFile(self.file_tree.GetFilePath())
         title_res = []
         songdata = []
@@ -587,6 +595,7 @@ class MyApp(wx.App):
 
             for file in files:
                 filepath = os.path.join(root, file)
+                #print "FILEPATH: %s" % filepath
                 if filepath in curPaths:
                     #print "Already have entry for: %s" % filepath
                     continue
@@ -605,17 +614,18 @@ class MyApp(wx.App):
                         )
 
         self.fill_list(songdata)
+        self.frm.SetStatusText("Found %s Songs" % len(self.media_list.rows))
         print "Done scanning."
 
     def findInZip(self, path, songlist, curfiles, fileinfo, titlere=None):
-        print "_searchZip %s" % path
+        #print "_searchZip %s" % path
         zip = zipfile.ZipFile(path)
         origfile = os.path.basename(path)
         namelist = zip.namelist()
         for filename in namelist:
             filepath = os.path.join(path, filename)
-            if filepath in curfiles:
-                #print "Already have entry for: %s" % filepath
+            if filename in curfiles:
+                #print "Already have entry for: %s" % filename
                 continue
 
             root, ext = os.path.splitext(filename)
@@ -633,7 +643,9 @@ class MyApp(wx.App):
                             fileinfo,
                             titlere
                     )
-                    print "ZIP FILENAME: %s" % completefn
+                    #print "ZIP FILENAME: %s" % completefn
+                    print "Adding %s" % filename
+                    self.frm.SetStatusText("Adding %s by %s" % (title, artist))
                     songlist.append([
                         artist,
                         title,
