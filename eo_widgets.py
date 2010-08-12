@@ -26,6 +26,7 @@ class SortVirtList(
     headers = []
     rows = []
     itemDataMap = {}
+    scantime = 0
 
     def __init__(self):
         print "SortVirtList Init"
@@ -118,9 +119,10 @@ class SortVirtList(
 
     def SaveData(self, filename):
         print "Saving %s" % filename
+        print "SCANTIME:", self.scantime
         f = open(filename, 'w')
         try:
-            pickle.dump((self.headers, self.rows), f)
+            pickle.dump((self.scantime, self.headers, self.rows), f)
         finally:
             f.close()
 
@@ -129,8 +131,10 @@ class SortVirtList(
             print "Loading %s" % filename
             f = open(filename)
             try:
-                headers, rows = pickle.load(f)
+                scantime, headers, rows = pickle.load(f)
                 self.SetData(headers, rows)
+                print "SCANTIME:", self.scantime
+                self.scantime = scantime
             finally:
                 f.close()
 
