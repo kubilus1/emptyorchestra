@@ -1,7 +1,9 @@
 import os
 import re
 import sys
+import stat
 import glob
+import time
 import pickle
 import zipfile
 import threading
@@ -68,15 +70,23 @@ class MyApp(wx.App):
     songdata = []
     player = None
     playthread = None
+    scanthread = None
+    scandirs = []
+
+    def __init__(self, *kwds, **args):
+        wx.App.__init__(self, *kwds, **args)
 
     def OnInit(self):
         # Get the XRC Resource
         self.res = xrc.XmlResource(os.path.join(DATADIR, 'emptyorch.xrc'))
         self.get_settings()
         self.init_frame()
+        self.scanthread = threading.Thread(target=self.scanDirs)
+        self.scanthread.start()
         return True
 
     def OnExit(self):
+        self.scanthread.join()
         if self.player:
             self.cdgSize = self.player.displaySize
             self.fullscreen = self.player.fullScreen
@@ -110,6 +120,7 @@ class MyApp(wx.App):
             print config.get('app', 'size')
             self.eoAppSize = eval(config.get('app', 'size'))
             self.eoAppPos = eval(config.get('app', 'pos'))
+            self.scandirs = eval(config.get('app', 'dirs'))
         else:
             self.delay = 0
             self.cdgSize = (640, 480)
@@ -117,6 +128,7 @@ class MyApp(wx.App):
             self.fullscreen = False
             self.eoAppSize = (640, 480)
             self.eoAppPos = (0, 0)
+            self.scandirs = []
             self.set_settings()
 
     def set_settings(self):
@@ -130,6 +142,7 @@ class MyApp(wx.App):
         config.add_section('app')
         config.set('app', 'size', str(self.eoAppSize))
         config.set('app', 'pos', str(self.eoAppPos))
+        config.set('app', 'dirs', str(self.scandirs))
         f = open(self.settings_path, 'wb')
         try:
             config.write(f)
@@ -272,6 +285,12 @@ class MyApp(wx.App):
         # Replace with event handler code
         print "OnMenu_PageSetup()"
         self.printer.PageSetup()
+
+    def _updateStatus(self, status):
+        wx.CallAfter(self._updateStatusML, status)
+
+    def _updateStatusML(self, status):
+        self.frm.SetStatusText(status, 0)
 
     def doLoadFile(self, path, archive=None):
         print "Load File:", path
@@ -548,17 +567,36 @@ class MyApp(wx.App):
                 artist, title, genre, ext, filepath, ''
             ])
             print "Adding %s" % filepath
-            self.frm.SetStatusText("Adding %s by %s" % (title, artist))
+            self._updateStatus("Adding %s by %s" % (title, artist))
+
+    def scanDirs(self):
+        for scandir in self.scandirs:
+            self.findKaraoke(scandir)
 
     def findKaraoke(self, path):
         curRows = self.media_list.rows
         curPaths = map(lambda x: x[4], curRows)
-        self.frm.SetStatusText("Scanning: %s" % path)
+        self._updateStatus("Scanning: %s" % path)
+        mtime = os.stat(path)[stat.ST_MTIME]
+        #if mtime < self.media_list.scantime:
+        #    print "%s is already up to date." % path
+        #    self.frm.SetStatusText("%s is already up to date." % path)
+        #    return
+
         #self.doLoadFile(self.file_tree.GetFilePath())
         title_res = []
         songdata = []
         fileinfo = {}
         for root, dirs, files in os.walk(path):
+            
+            cur_mtime = os.stat(root)[stat.ST_MTIME]
+            if cur_mtime < self.media_list.scantime:
+                continue
+            else:
+                print "CURMTIME:", cur_mtime
+                print "SCANTIME:", self.media_list.scantime
+                print "Detected modification for %s" % root
+                
             # Check each dir to see if there is a titles file
             title_file = os.path.join(root, "titles.txt")
             if os.path.isfile(title_file):
@@ -613,8 +651,9 @@ class MyApp(wx.App):
                             title_res
                         )
 
+        self.media_list.scantime = time.time()
         self.fill_list(songdata)
-        self.frm.SetStatusText("Found %s Songs" % len(self.media_list.rows))
+        self._updateStatus("Found %s Songs" % len(self.media_list.rows))
         print "Done scanning."
 
     def findInZip(self, path, songlist, curfiles, fileinfo, titlere=None):
@@ -645,7 +684,7 @@ class MyApp(wx.App):
                     )
                     #print "ZIP FILENAME: %s" % completefn
                     print "Adding %s" % filename
-                    self.frm.SetStatusText("Adding %s by %s" % (title, artist))
+                    self._updateStatus("Adding %s by %s" % (title, artist))
                     songlist.append([
                         artist,
                         title,
@@ -659,6 +698,8 @@ class MyApp(wx.App):
                     print "ZIP member %s compressed with unsupported type (%d)" % (
                         filename, info.compress_type
                     )
+
+
 
     def OnButton_choose_btn(self, evt):
         path = self.file_tree.GetPath()
