@@ -293,10 +293,11 @@ class cdgPlayer(pykPlayer):
         pygame.display.init()
         pygame.display.set_caption(cdgfile)
         #pygame.mouse.set_visible(True)
+        pygame.mouse.set_visible(False)
         self.display = pygame.display.set_mode(self.displaySize, self.displayFlags)
         self.displayTime = pygame.time.get_ticks()
         self.display.fill((100,100,100))
-        
+
         print "Fill surface"
         self.surface = pygame.Surface(self.displaySize)
         self.surface.fill((128, 128, 0))
@@ -379,7 +380,12 @@ class cdgPlayer(pykPlayer):
 
     def WaitForPlayer(self):
         while self.State != STATE_CLOSED:
-            self.Poll()
+            try:
+                self.Poll()
+            except RuntimeError:
+                self.State = STATE_PLAYING
+                ret = pygame.mixer.music.play()
+                print "Played ret:", ret
 
     def handleEvent(self, event):
         # Only handle resize events 250ms after opening the
@@ -400,6 +406,9 @@ class cdgPlayer(pykPlayer):
 
             # Tell the player we have finished resizing 
             self.doResizeEnd()
+        elif event.type == pygame.USEREVENT:
+            print "Done playing, exiting..."
+            self.Close()
         elif event.type == pygame.QUIT:
             print "pycdg Close"
             self.Close()
@@ -443,10 +452,9 @@ class cdgPlayer(pykPlayer):
 
 
     def doPlay(self):
-        print "doPlay"
         self.State = STATE_PLAYING
-        pygame.mixer.music.play()
-        print "Played"
+        ret = pygame.mixer.music.play()
+        print "Played ret:", ret
 
     # Pause the song - Use Pause() again to unpause
     def doPause(self):
@@ -476,7 +484,12 @@ class cdgPlayer(pykPlayer):
     # Get the current time (in milliseconds). Blocks if pygame is
     # not initialised yet.
     def GetPos(self):
-        return pygame.mixer.music.get_pos()
+        pos = pygame.mixer.music.get_pos()
+        if pos < 0:
+            print "Negative GetPOS (%s), this is not normal" % pos
+            raise RuntimeError, "GetPOS Failed."
+        else:
+            return pos
 
     def SetupOptions(self):
         """ Initialise and return optparse OptionParser object,
@@ -511,7 +524,6 @@ class cdgPlayer(pykPlayer):
             
     def doStuff(self):
         pykPlayer.doStuff(self)
-        
         # Check whether the songfile has moved on, if so
         # get the relevant CDG data and update the screen.
         if self.State == STATE_PLAYING or self.State == STATE_CAPTURING:
@@ -531,9 +543,6 @@ class cdgPlayer(pykPlayer):
             if (self.curr_pos - self.LastPos) > self.ms_per_update:
                 self.cdgDisplayUpdate()
                 self.LastPos = self.curr_pos
-
-        #else:
-        #    print "Not playing"
 
     #def handleEvent(self, event):
     #    pykPlayer.handleEvent(self, event)
@@ -686,6 +695,7 @@ class cdgPlayer(pykPlayer):
         #   manager.surface, and then flip the whole display.  (We
         #   can't scale and blit the tiles one a time in this mode,
         #   since that introduces artifacts between the tile edges.)
+        
         borderColour = self.packetReader.GetBorderColour()
         if borderColour != self.borderColour:
             # When the border colour changes, blit the whole screen
