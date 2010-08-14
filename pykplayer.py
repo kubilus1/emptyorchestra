@@ -130,7 +130,6 @@ class pykPlayer:
 
     def Play(self):
         self.doPlay()
-
         self.PlayStartTime = pygame.time.get_ticks()
         self.State = STATE_PLAYING
 
@@ -242,7 +241,9 @@ class pykPlayer:
         pass
 
     def handleEvent(self, event):
-        if event.type == pygame.USEREVENT:
+        if event.type == pygame.USEREVENT \
+        or pygame.mixer.music.get_busy() == False:
+            print "Done playing, exiting..."
             self.Close()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:

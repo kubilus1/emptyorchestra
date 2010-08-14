@@ -311,6 +311,7 @@ class MyApp(wx.App):
         print "Load File:", path
         self.st_file.SetLabel(os.path.basename(path))
         if self.playthread:
+            print "Shutting down playthread."
             self.player.shutdown()
             self.playthread.join()
 
