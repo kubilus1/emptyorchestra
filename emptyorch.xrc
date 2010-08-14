@@ -42,12 +42,17 @@
       <object class="wxMenu">
         <label>Edit</label>
         <help>Edit some stuff!</help>
-        <object class="wxMenuItem"/>
+        <object class="wxMenuItem" name="SetDirs">
+          <label>Set Karaoke Dir</label>
+          <XRCED>
+            <events>EVT_MENU</events>
+          </XRCED>
+        </object>
       </object>
       <object class="wxMenu">
         <label>Help</label>
         <help>HELP!!</help>
-        <object class="wxMenuItem">
+        <object class="wxMenuItem" name="About">
           <label>About</label>
         </object>
       </object>

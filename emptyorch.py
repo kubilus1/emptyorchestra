@@ -81,6 +81,8 @@ class MyApp(wx.App):
         self.res = xrc.XmlResource(os.path.join(DATADIR, 'emptyorch.xrc'))
         self.get_settings()
         self.init_frame()
+        if not self.scandirs:
+            self.setScanDir()
         self.scanthread = threading.Thread(target=self.scanDirs)
         self.scanthread.start()
         return True
@@ -91,7 +93,6 @@ class MyApp(wx.App):
             self.cdgSize = self.player.displaySize
             self.fullscreen = self.player.fullScreen
             self.delay = self.player.InternalOffsetTime
-
         self.set_settings()       
     #    self.timer.Stop()
 
@@ -163,10 +164,6 @@ class MyApp(wx.App):
         self.file_tree = xrc.XRCCTRL(self.frm, 'file_tree')
         self.media_list = xrc.XRCCTRL(self.frm, 'media_list')
         self.status_bar = xrc.XRCCTRL(self.frm, 'statusbar')
-        #print "STATUS BAR:", self.status_bar
-        #print help(self.frm.GetStatusBar)
-        #self.status_bar = self.frm.GetStatusBar()
-        #print "SB:", dir(sb)
         #self.queue_list = xrc.XRCCTRL(self.frm, 'queue_list')
 
         # Attach an unknown wxSearchCtrl
@@ -197,6 +194,7 @@ class MyApp(wx.App):
         self.Bind(wx.EVT_MENU, self.OnMenu_Print, id=xrc.XRCID('Print'))
         self.Bind(wx.EVT_MENU, self.OnMenu_PrintPreview, id=xrc.XRCID('PrintPreview'))
         self.Bind(wx.EVT_MENU, self.OnMenu_PageSetup, id=xrc.XRCID('PageSetup'))
+        self.Bind(wx.EVT_MENU, self.OnMenu_SetDirs, id=xrc.XRCID('SetDirs'))
 
         # Add some special controls
         try:
@@ -257,6 +255,23 @@ class MyApp(wx.App):
         print "Cancel search"
         self.media_list.ClearSearch()
         self.search.SetValue('')
+
+    def setScanDir(self):
+        dlg = wx.DirDialog(
+            self.frm,
+            message = "Choose Directory of Karaoke Files",
+        )
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            print "Setting Dir to :", path
+            self.scandirs = [path,]
+        dlg.Destroy()
+
+    def OnMenu_SetDirs(self, evt):
+        self.setScanDir()
+        self.scanthread.join(1)
+        self.scanthread = threading.Thread(target=self.scanDirs)
+        self.scanthread.start()
 
     def OnMenu_open_menu(self, evt):
         dlg = wx.FileDialog(self.frm, message="Choose a media file",
