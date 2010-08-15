@@ -85,6 +85,7 @@ class MyApp(wx.App):
             self.setScanDir()
         self.scanthread = threading.Thread(target=self.scanDirs)
         self.scanthread.start()
+        time.sleep(1)
         return True
 
     def OnExit(self):
@@ -586,7 +587,9 @@ class MyApp(wx.App):
             self._updateStatus("Adding %s by %s" % (title, artist))
 
     def scanDirs(self):
+        print "ScanDirs"
         for scandir in self.scandirs:
+            print "Scanning: %s", scandir
             self.findKaraoke(scandir)
 
     def findKaraoke(self, path):
