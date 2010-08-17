@@ -2,9 +2,8 @@ import shutil
 
 from bbfreeze import Freezer
 
-f = Freezer("emptyorch")
+f = Freezer("emptyorch_rel")
 f.addScript("emptyorch.py")
 f()
-shutil.copy("emptyorch.xrc", "emptyorch")
-shutil.copy("emptyorch.cfg", "emptyorch")
-shutil.copy("fake.mp3", "emptyorch")
+shutil.copy("emptyorch.xrc", "emptyorch_rel")
+shutil.copy("fake.mp3", "emptyorch_rel")
