@@ -50,6 +50,8 @@ def _fix_my_import(name):
     return mod
 
 if os.name == "nt":
+    if os.path.basename(DATADIR) == "library.zip":
+        DATADIR = os.path.dirname(DATADIR)
     xrc._my_import = _fix_my_import
 
 
@@ -733,6 +735,7 @@ class MyApp(wx.App):
         self.media_list.SaveData(self.songdb_path)
 
 if __name__ == "__main__":
+    print "DATADIR:", DATADIR
     app = MyApp(False)
     app.MainLoop()
     print "Done with app"
