@@ -58,7 +58,7 @@ Sometimes the artist and title of the song files are hard to determine accuratel
 
 This information is stored in the tag of the music file and will be preserved on re-scans of the music database.
 
-=TroubleShooting=
+=Troubleshooting=
 
 ==After Upgrading EmptyOrchestra Fails to Start==
 EmptyOrchestra should automatically both the configuration and the musicdata.  If for some reason this does not work, try reinitializing the user data.  
