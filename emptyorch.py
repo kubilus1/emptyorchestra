@@ -124,7 +124,10 @@ class MyApp(wx.App):
             print config.get('app', 'size')
             self.eoAppSize = eval(config.get('app', 'size'))
             self.eoAppPos = eval(config.get('app', 'pos'))
-            self.scandirs = eval(config.get('app', 'dirs'))
+            try:
+                self.scandirs = eval(config.get('app', 'dirs'))
+            except ConfigParser.NoOptionError:
+                self.scandirs = []
         else:
             self.delay = 0
             self.cdgSize = (640, 480)

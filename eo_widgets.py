@@ -99,6 +99,12 @@ class SortVirtList(
                 headlens[i]
             )))
 
+    def ClearData(self):
+        self.rows = []
+        self.headers = []
+        self.itemDataMap = {}
+        self.scantime = 0
+
     def SetData(self, headers, rows):
         self.ClearAll()
         self.headers = headers
@@ -131,7 +137,12 @@ class SortVirtList(
             print "Loading %s" % filename
             f = open(filename)
             try:
-                scantime, headers, rows = pickle.load(f)
+                data = pickle.load(f)
+                if len(data) == 3:
+                    scantime, headers, rows = data 
+                elif len(data) == 2:
+                    headers, rows = data
+                    scantime = 0
                 self.SetData(headers, rows)
                 print "SCANTIME:", self.scantime
                 self.scantime = scantime
