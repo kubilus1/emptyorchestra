@@ -1,4 +1,5 @@
 #summary Explain Usage of Emptyorchestra
+#labels Featured
 
 = Emptyorchestra Users Guide =
 
@@ -9,11 +10,10 @@ EmptyOrchestra turns your *Nix or Windows PC into a karaoke jukebox!
 =Usage=
 
 ==Finding Karaoke Files==
-Using the left top pane, browse to the directory containing karaoke files and press 'Scan'.  This will recursively search for files from the chosen location.  Karaoke files will showup in the right hand media pane.
 
-Scanning multiple directories will add to the songs found in the media pane.  Scanning the same directory more than once will not add duplicates in the media pane.
+When starting EmptyOrchestra for the first time you will be presented with a dialog asking where to find the karaoke files.  Select the directory containing all karaoke files.
 
-The found songs are automatically saved.
+EmptyOrchestra will enact a background scan of this data and load the songs into the system.  On every start of EmptyOrchestra it will check for new songs.  This happens in the background and you can sing while it scans!
 
 ==Starting Over==
 
@@ -51,3 +51,17 @@ Emptyorchestra will automatically preserve settings from the interface.  This wo
  * Karaoke window size and position
  * Fullscreen display
  * Lyric offset
+
+==Updating Song Artist and Title==
+
+Sometimes the artist and title of the song files are hard to determine accurately.  You can double click on these fields and correct them.  
+
+This information is stored in the tag of the music file and will be preserved on re-scans of the music database.
+
+=TroubleShooting=
+
+==After Upgrading EmptyOrchestra Fails to Start==
+EmptyOrchestra should automatically both the configuration and the musicdata.  If for some reason this does not work, try reinitializing the user data.  
+
+  * On any unix system, simply remove the '~/.emptyorchestra' directory.  
+  * On Windows you will remove a directory 'C:\Documents and Settings\<username>\.emptyorchestra'
