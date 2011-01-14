@@ -60,7 +60,46 @@
     <object class="wxFlexGridSizer">
       <object class="sizeritem">
         <object class="wxSplitterWindow">
-          
+          <object class="wxPanel">
+            <object class="wxBoxSizer">
+              <object class="sizeritem">
+                <object class="wxBoxSizer">
+                  <object class="sizeritem">
+                    <object class="wxGenericDirCtrl" name="file_tree">
+                      <filter>All files (*.*)|*.*|Music files (*.mp3)|*.mp3</filter>
+                      <defaultfilter>*.mp3</defaultfilter>
+                      <tooltip>File Tree</tooltip>
+                      <help>Scan Folders for Media Files</help>
+                    </object>
+                    <option>1</option>
+                    <flag>wxEXPAND|wxGROW</flag>
+                  </object>
+                  <object class="sizeritem">
+                    <object class="wxButton" name="choose_btn">
+                      <label>Scan</label>
+                      <XRCED>
+                        <events>EVT_BUTTON</events>
+                      </XRCED>
+                    </object>
+                    <flag>wxEXPAND</flag>
+                  </object>
+                  <orient>wxVERTICAL</orient>
+                </object>
+                <option>1</option>
+                <flag>wxEXPAND|wxGROW</flag>
+              </object>
+              <object class="sizeritem">
+                <object class="wxListCtrl" name="queue_list" subclass="eo_widgets.SortVirtList">
+                  <size>0,0</size>
+                  <bg>#E5E5E5</bg>
+                  <style>wxLC_REPORT|wxLC_NO_HEADER|wxLC_VIRTUAL|wxLC_NO_SORT_HEADER</style>
+                  <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+                </object>
+                <option>0</option>
+              </object>
+              <orient>wxVERTICAL</orient>
+            </object>
+          </object>
           <object class="wxPanel" name="media_list_panel">
             <object class="wxBoxSizer">
               <orient>wxVERTICAL</orient>
