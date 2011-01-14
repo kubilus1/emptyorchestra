@@ -177,6 +177,7 @@
               </object>
               <object class="sizeritem">
                 <object class="wxSlider" name="volume_sl">
+                  <size>100</size>
                   <value>100</value>
                   <min>0</min>
                   <max>100</max>
@@ -187,8 +188,8 @@
                     <events>EVT_SCROLL|EVT_SCROLL</events>
                   </XRCED>
                 </object>
-                <flag>wxTOP|wxBOTTOM|wxEXPAND|wxGROW</flag>
-                <border>10</border>
+                <flag>wxLEFT|wxRIGHT</flag>
+                <border>-25</border>
               </object>
               <object class="sizeritem">
                 <object class="wxPanel" name="Playlist_panel"/>
