@@ -45,10 +45,12 @@ class SortVirtList(
         index = -1
         searchData = {}
         for row in self.rows:
-            found = False
-            for col in row:
-                if term.lower() in col.lower():
-                    found = True
+            coldata = " ".join(row)
+            found = True
+            terms = term.split()
+            for item in terms:
+                if item.lower() not in coldata.lower():
+                    found = False
                     break
             if found:
                 index += 1
