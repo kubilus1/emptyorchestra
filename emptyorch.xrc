@@ -59,7 +59,7 @@
     </object>
     <object class="wxFlexGridSizer">
       <object class="sizeritem">
-        <object class="wxSplitterWindow">
+        <object class="wxSplitterWindow" name="mainSplitter">
           <object class="wxPanel" name="media_list_panel">
             <object class="wxBoxSizer">
               <orient>wxVERTICAL</orient>
@@ -67,15 +67,29 @@
                 <object class="wxListCtrl" name="media_list" subclass="eo_widgets.MusicList">
                   <bg>#E6E6FA</bg>
                   <style>wxLC_REPORT|wxLC_SORT_ASCENDING|wxLC_VIRTUAL</style>
+                  <XRCED>
+                    <events>EVT_LIST_COL_RIGHT_CLICK</events>
+                  </XRCED>
                 </object>
                 <option>1</option>
-                <flag>wxEXPAND|wxGROW</flag>
+                <flag>wxLEFT|wxRIGHT|wxEXPAND|wxGROW</flag>
+                <border>5</border>
               </object>
               <object class="sizeritem">
                 <object class="wxBoxSizer">
                   <object class="sizeritem">
                     <object class="wxButton" name="playsel_btn">
                       <label>Play Selected</label>
+                      <bg>#CCD6D9</bg>
+                      <font>
+                        <size>12</size>
+                        <style>normal</style>
+                        <weight>normal</weight>
+                        <underlined>0</underlined>
+                        <family>swiss</family>
+                        <face>Sans</face>
+                        <encoding>UTF-8</encoding>
+                      </font>
                       <XRCED>
                         <events>EVT_BUTTON</events>
                       </XRCED>
@@ -84,22 +98,43 @@
                   <object class="sizeritem">
                     <object class="wxButton" name="addplay_btn">
                       <label>Add to Playlist</label>
+                      <bg>#C3D9C3</bg>
+                      <font>
+                        <size>12</size>
+                        <style>normal</style>
+                        <weight>normal</weight>
+                        <underlined>0</underlined>
+                        <family>swiss</family>
+                        <face>Sans</face>
+                        <encoding>UTF-8</encoding>
+                      </font>
                       <XRCED>
                         <events>EVT_BUTTON</events>
                       </XRCED>
                     </object>
                   </object>
-                  <orient>wxHORIZONTAL</orient>
                   <object class="sizeritem">
                     <object class="unknown" name="searcher_ctrl">
-                      <bg>#E5E5E5</bg>
+                      <bg>#FFFFFF</bg>
+                      <font>
+                        <size>12</size>
+                        <style>normal</style>
+                        <weight>normal</weight>
+                        <underlined>0</underlined>
+                        <family>swiss</family>
+                        <face>Sans</face>
+                        <encoding>UTF-8</encoding>
+                      </font>
+                      <tooltip>Search</tooltip>
                     </object>
                     <option>2</option>
                     <flag>wxALL|wxEXPAND</flag>
                     <border>2</border>
                   </object>
+                  <orient>wxHORIZONTAL</orient>
                 </object>
-                <flag>wxEXPAND</flag>
+                <flag>wxALL|wxEXPAND</flag>
+                <border>2</border>
               </object>
             </object>
             <size>200</size>
@@ -200,9 +235,9 @@
             <size>100</size>
             <bg>#ADD8E6</bg>
           </object>
-          <size>0</size>
           <orientation>horizontal</orientation>
           <sashpos>-1</sashpos>
+          <gravity>0.925</gravity>
           <minsize>125</minsize>
         </object>
         <option>2</option>
