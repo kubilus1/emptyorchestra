@@ -186,6 +186,11 @@ class MyApp(wx.App):
             self.OnButton_playsel_btn,
             id=xrc.XRCID('media_list')
         )
+        self.Bind(
+            wx.EVT_LIST_ITEM_RIGHT_CLICK, 
+            self.OnMediaList_RClick,
+            id=xrc.XRCID('media_list')
+        )
         self.Bind(wx.EVT_BUTTON, self.OnButton_addplay_btn, id=xrc.XRCID('addplay_btn'))
         self.Bind(wx.EVT_SCROLL, self.OnScroll_slider, id=xrc.XRCID('slider'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_prev_btn, id=xrc.XRCID('prev_btn'))
@@ -241,6 +246,25 @@ class MyApp(wx.App):
         print "SET SIZE :", self.eoAppSize
         self.frm.SetSizeWH(self.eoAppSize[0], self.eoAppSize[1])
         self.frm.SetPosition(self.eoAppPos)
+
+    def OnMediaList_RClick(self, evt):
+        print "MediaList RClick"
+        menu_items = [
+            (1, "Play"),
+            (2, "Add to Playlist"),
+            (3, "Edit")
+        ]
+        menu = wx.Menu()
+        for menuid, title in menu_items:
+            print menuid, title
+            menu.Append( menuid, title )
+            #self.Bind(wx.EVT_MENU, self.OnMenuSelectionML, menuid)
+            wx.EVT_MENU( menu, menuid, self.OnMenuSelectionML )
+        self.frm.PopupMenu( menu, evt.GetPoint() )
+        menu.Destroy()
+
+    def OnMenuSelectionML(self, evt):
+        print "You selected", evt.GetId()
 
     def OnFrame_Close(self, evt):
         print "Closing..."
