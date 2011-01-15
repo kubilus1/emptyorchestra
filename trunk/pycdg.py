@@ -784,11 +784,11 @@ class cdgPlayer(pykPlayer):
             #
             # ZipFile.extract not available pre python 2.6
             #
-            #zip.extract(cdgfile, self.tempdir)
-            #zip.extract(zipSoundFile, self.tempdir)
+            zip.extract(cdgfile, self.tempdir)
+            zip.extract(zipSoundFile, self.tempdir)
         
-            self._writeZipMember(zippath, cdgfile, self.tempdir)
-            self._writeZipMember(zippath, zipSoundFile, self.tempdir)
+            #self._writeZipMember(zippath, cdgfile, self.tempdir)
+            #self._writeZipMember(zippath, zipSoundFile, self.tempdir)
 
             soundFilePath = os.path.join(self.tempdir, zipSoundFile)
             cdgFilePath = os.path.join(self.tempdir, cdgfile)
