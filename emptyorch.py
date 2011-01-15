@@ -186,11 +186,6 @@ class MyApp(wx.App):
             self.OnButton_playsel_btn,
             id=xrc.XRCID('media_list')
         )
-        self.Bind(
-            wx.EVT_LIST_ITEM_RIGHT_CLICK, 
-            self.OnMediaList_RClick,
-            id=xrc.XRCID('media_list')
-        )
         self.Bind(wx.EVT_BUTTON, self.OnButton_addplay_btn, id=xrc.XRCID('addplay_btn'))
         self.Bind(wx.EVT_SCROLL, self.OnScroll_slider, id=xrc.XRCID('slider'))
         self.Bind(wx.EVT_BUTTON, self.OnButton_prev_btn, id=xrc.XRCID('prev_btn'))
@@ -238,6 +233,10 @@ class MyApp(wx.App):
         #self.timer.Start(100)
 
         self.media_list.setupData(self.songdb_path)
+        self.media_list.AddRclickItem(
+            "Add to Playlist", self.DoAddPlaylist
+        )
+        self.media_list.DoPlay = self.DoPlay
         #self.printer = Printer(self.frm)
         self.printer = SongPrinter()
         print "Songs:", len(self.media_list.rows)
@@ -246,25 +245,6 @@ class MyApp(wx.App):
         print "SET SIZE :", self.eoAppSize
         self.frm.SetSizeWH(self.eoAppSize[0], self.eoAppSize[1])
         self.frm.SetPosition(self.eoAppPos)
-
-    def OnMediaList_RClick(self, evt):
-        print "MediaList RClick"
-        menu_items = [
-            (1, "Play"),
-            (2, "Add to Playlist"),
-            (3, "Edit")
-        ]
-        menu = wx.Menu()
-        for menuid, title in menu_items:
-            print menuid, title
-            menu.Append( menuid, title )
-            #self.Bind(wx.EVT_MENU, self.OnMenuSelectionML, menuid)
-            wx.EVT_MENU( menu, menuid, self.OnMenuSelectionML )
-        self.frm.PopupMenu( menu, evt.GetPoint() )
-        menu.Destroy()
-
-    def OnMenuSelectionML(self, evt):
-        print "You selected", evt.GetId()
 
     def OnFrame_Close(self, evt):
         print "Closing..."
@@ -394,9 +374,15 @@ class MyApp(wx.App):
         #self.player.shutdown() 
 
     def OnButton_addplay_btn(self, evt):
+        self.DoAddPlaylist(evt)
+
+    def DoAddPlaylist(self, evt):
         self.addToPlaylist()
 
     def OnButton_playsel_btn(self, evt):
+        self.DoPlay(evt)
+        
+    def DoPlay(self, evt):
         filetype = None
         path = None
         archive = None

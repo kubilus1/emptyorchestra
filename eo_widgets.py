@@ -234,6 +234,8 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
     _origrow = -1
     _dirty = False
     _tabclose = False
+    _rclick_items = []
+    _menu_evt = None
 
     def __init__(self):
         print "EditMediaList Init"
@@ -242,13 +244,33 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         self.Bind(wx.EVT_WINDOW_CREATE, self.OnCreate)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftDClick)
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnRClick)
+        self.AddRclickItem("Play", self._DoPlay)
+        self.AddRclickItem("Edit", self.DoEdit)
 
+    def OnRClick(self, evt):
+        print "EditMediaList RClick"
+        menu = wx.Menu()
+        count = 0
+        # Kludge since we need to retain the menu evt click in case 
+        # we do an edit.
+        self._menu_evt = evt
+        for title, callback in self._rclick_items:
+            count += 1
+            print count, title
+            menu.Append( count, title )
+            wx.EVT_MENU( menu, count, callback )
+            #self.Bind(wx.EVT_MENU, callback, count)
+        self.PopupMenu( menu, evt.GetPoint() )
+        menu.Destroy()
+
+    def OnRclickMenu(self, evt):
+        print "You selected", evt.GetId()
 
     def OnLeftDown(self, evt=None):
         """ Only select with a single click """
         if self.editor.IsShown():
             self.CloseEditor()
-            
         x,y = evt.GetPosition()
         row,flags = self.HitTest((x,y))
     
@@ -257,7 +279,18 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
 
     def OnLeftDClick(self, evt):
         """ Call original click routine for double click """
-        listmix.TextEditMixin.OnLeftDown(self, evt)
+        self.DoPlay(evt)
+
+    def DoEdit(self, evt):
+        listmix.TextEditMixin.OnLeftDown(self, self._menu_evt)
+
+    def _DoPlay(self, evt):
+        """ _DoPlay Helps the references turn out okay """
+        self.DoPlay(evt)
+
+    def DoPlay(self, evt):
+        """ DoPlay Empty Method """
+        print "EditMediaList.DoPlay"
 
     def OnCreate(self, event):
         print "EditMediaList OnCreate"
@@ -284,6 +317,9 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
             self._origrow = self.itemIndexMap[row]
             self._origdata = str(self.itemDataMap[self._origrow])
         listmix.TextEditMixin.OpenEditor(self, col, row)
+
+    def AddRclickItem(self, title, callback):
+        self._rclick_items.append((title, callback))
 
     def SetVirtualData(self, item, col, data):
         print "Set Virtual Data"
@@ -347,6 +383,7 @@ class MusicList(EditMediaList):
         if self._dirty:
             self.SaveData(self.datafile)
         self._dirty = False
+
 
 class Playlist_list(gizmos.EditableListBox):
 #class Playlist_list(wx.ListCtrl):
