@@ -18,18 +18,21 @@
         </XRCED>
         <object class="wxMenuItem" name="Print">
           <label>Print</label>
+          <help>Let's print this sucker out.</help>
           <XRCED>
             <events>EVT_MENU</events>
           </XRCED>
         </object>
         <object class="wxMenuItem" name="PrintPreview">
           <label>Print Preview</label>
+          <help>Gotta see what it looks like first.</help>
           <XRCED>
             <events>EVT_MENU</events>
           </XRCED>
         </object>
         <object class="wxMenuItem" name="PageSetup">
           <label>Page Setup</label>
+          <help>Setup that printer!</help>
           <XRCED>
             <events>EVT_MENU</events>
           </XRCED>
@@ -37,6 +40,7 @@
         <object class="separator"/>
         <object class="wxMenuItem" name="Quit">
           <label>Quit</label>
+          <help>Nah nah nah holmes, you can't do that.</help>
         </object>
       </object>
       <object class="wxMenu">
@@ -44,6 +48,7 @@
         <help>Edit some stuff!</help>
         <object class="wxMenuItem" name="SetDirs">
           <label>Set Karaoke Dir</label>
+          <help>Let's find some karaoke tunes!</help>
           <XRCED>
             <events>EVT_MENU</events>
           </XRCED>
@@ -118,7 +123,6 @@
                 <flag>wxLEFT|wxRIGHT|wxEXPAND|wxGROW</flag>
                 <border>5</border>
               </object>
-            
             </object>
             <size>200</size>
           </object>

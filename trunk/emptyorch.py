@@ -35,6 +35,7 @@ from pykconstants import *
 DATADIR = os.path.dirname(emptyorch_xrc.__file__)
 
 def _fix_my_import(name):
+    """_fix_my_import  Fix issue specific to nt"""
     try:
         mod = __import__(name)
     except ImportError:
@@ -58,7 +59,9 @@ if os.name == "nt":
 
 
 class cdgAppPlayer(cdgPlayer):
+    """cdgAppPlayer Override for NT specific issues"""
     def shutdown(self):
+        """ shutdown Override shutdown for NT"""
         if os.name == 'nt':
             # Must load another mp3 for pygame since it never wants to
             # release the file and we want to cleanup the temp dir.
@@ -67,7 +70,12 @@ class cdgAppPlayer(cdgPlayer):
         cdgPlayer.shutdown(self)
 
 
-class MyApp(wx.App):
+class EmptyOrch(wx.App):
+    """ EmptyOrch
+
+    EmptyOrchestra - The python powered karaoke jukebox that aims
+    to serve all your karaoke dreams.
+    """
 
     kar_exts = ('.cdg', '.kar')
     media_exts = ('.mp3','.ogg', '.avi', '.mpg')
@@ -78,9 +86,11 @@ class MyApp(wx.App):
     scandirs = []
 
     def __init__(self, *kwds, **args):
+        """ __init__  Initialize the application"""
         wx.App.__init__(self, *kwds, **args)
 
     def OnInit(self):
+        """OnInit   Some WxPythony initilization"""
         # Get the XRC Resource
         self.res = xrc.XmlResource(os.path.join(DATADIR, 'emptyorch.xrc'))
         self.get_settings()
@@ -93,6 +103,7 @@ class MyApp(wx.App):
         return True
 
     def OnExit(self):
+        """OnExit   Exit cleanly and save settings"""
         self.scanthread.join()
         if self.player:
             self.cdgSize = self.player.displaySize
@@ -102,6 +113,8 @@ class MyApp(wx.App):
     #    self.timer.Stop()
 
     def get_settings(self):
+        """get_settings   Retrieve saved settings, or initialize
+        new settings"""
         # Get the user paths
         self.homedir = os.path.expanduser('~')
         self.eo_dir = os.path.join(self.homedir, '.emptyorch')
@@ -141,6 +154,8 @@ class MyApp(wx.App):
             self.set_settings()
 
     def set_settings(self):
+        """set_settings   Save current state to be retrieved on 
+        next run."""
         print "Set_Settings"
         config = ConfigParser.ConfigParser()
         config.add_section('cdg')
@@ -159,6 +174,7 @@ class MyApp(wx.App):
             f.close()
 
     def init_frame(self):
+        """init_frame   Setup of the main frame the user interacts with."""
         # Get stuff from the XRC
         #import pdb
         #pdb.set_trace()
@@ -252,6 +268,7 @@ class MyApp(wx.App):
         self.frm.SetPosition(self.eoAppPos)
 
     def OnFrame_Close(self, evt):
+        """OnFrame_Close   Safely shutdown the main program window."""
         print "Closing..."
     #    self.timer.Stop()
         self.eoAppSize = self.frm.GetSizeTuple()
@@ -259,14 +276,20 @@ class MyApp(wx.App):
         self.frm.Destroy()
 
     def DoFindSimilar(self, evt):
+        """DoFindSimilar   Callback function that attempts to find
+        similar artists to the currently highlighted artist."""
         index = self.media_list.GetSelectedId()
         artist = self.media_list.GetItem(index, 0).GetText()
         if index != -1:
-            u = urllib2.urlopen(
-            "http://ws.audioscrobbler.com/2.0/artist/%s/similar.txt" % ( 
-                    artist.replace(" ", "+")
+            try:
+                u = urllib2.urlopen(
+                "http://ws.audioscrobbler.com/2.0/artist/%s/similar.txt" % ( 
+                        artist.replace(" ", "+")
+                    )
                 )
-            )
+            except urllib2.HTTPError:
+                self._updateStatus("Could not find anyone similar to %s" % artist)
+                return
 
             similars = []
             for line in u.readlines():
@@ -276,10 +299,10 @@ class MyApp(wx.App):
         random.shuffle(idlist)
         found = False
         for index in idlist:
+            print similars[index]
             self.media_list.SearchData(similars[index], 0)
             if self.media_list.GetItemCount() > 0:
                 print "Found:", self.media_list.GetItemCount()
-                print "%s is similar to %s" % (similars[index], artist)
                 self._updateStatus(
                     "%s is similar to %s.  Clear the search and try again for more suggestions." % (similars[index], artist)
                 )
@@ -289,6 +312,8 @@ class MyApp(wx.App):
             self._updateStatus("Could not find anyone similar to %s" % artist)
 
     def OnDoSearch(self, evt):
+        """OnDoSearch   Callback function that causes the media_list
+        widget to search based on the data in the search bar."""
         val = self.search.GetValue()
         if val:
             print "Searching for: %s" % val
@@ -300,6 +325,8 @@ class MyApp(wx.App):
         )
 
     def OnSearchCancel(self, evt):
+        """OnSearchCancel   Callback function that clears the search 
+        bar and returns the media_list result set back to default."""
         print "Cancel search"
         self.media_list.ClearSearch()
         self._updateStatus("Showing %s songs" %
@@ -308,6 +335,8 @@ class MyApp(wx.App):
         self.search.SetValue('')
 
     def setScanDir(self):
+        """setScanDir   Kicks off dialog that sets the karaoke file
+        scanning directory."""
         dlg = wx.DirDialog(
             self.frm,
             message = "Choose Directory of Karaoke Files",
@@ -319,12 +348,17 @@ class MyApp(wx.App):
         dlg.Destroy()
 
     def OnMenu_SetDirs(self, evt):
+        """OnMenu_SetDirs   Callback from the menu that presents the 
+        karaoke file directory dialog, then starts a thread to 
+        scan for karoake files."""
         self.setScanDir()
         self.scanthread.join(1)
         self.scanthread = threading.Thread(target=self.scanDirs)
         self.scanthread.start()
 
     def OnMenu_open_menu(self, evt):
+        """OnMenu_open_menu   Callback that plays a karaoke file directly.
+        Consider this function DEPRECATED."""
         dlg = wx.FileDialog(self.frm, message="Choose a media file",
                             defaultDir=os.getcwd(), defaultFile="",
                             style=wx.OPEN | wx.CHANGE_DIR )
@@ -335,30 +369,33 @@ class MyApp(wx.App):
         dlg.Destroy()
         
     def OnMenu_Print(self, evt):
+        """OnMenu_Print   Callback to print the song list."""
         self.printer.Print(self.media_list.rows, "Songs")
 
     def OnMenu_PrintPreview(self, evt):
-        data = """Foo
-        bar
-        barg
-
-        baz
-        """
+        "OnMenu_PrintPreview  Callback to preview the print."""
         #self.printer.PreviewText(data, "FOO")
         self.printer.PreviewText(self.media_list.rows, "Songs")
 
     def OnMenu_PageSetup(self, evt):
+        """OnMenu_PageSetup  Show the page setup dialog."""
         # Replace with event handler code
         print "OnMenu_PageSetup()"
         self.printer.PageSetup()
 
     def _updateStatus(self, status):
+        """_updateStatus   This uses CallAfter to schedule the
+        update of the status bar when possible.  Updating the status
+        bar directly causes weird things to happen on startup."""
         wx.CallAfter(self._updateStatusML, status)
 
     def _updateStatusML(self, status):
+        """_updateStatusML  Updates the status bar.  NEVER call this 
+        directly!"""
         self.frm.SetStatusText(status, 0)
 
     def doLoadFile(self, path, archive=None):
+        """doLoadFile   Load and run a karaoke file."""
         print "Load File:", path
         self.st_file.SetLabel(os.path.basename(path))
         if self.playthread:
@@ -781,7 +818,7 @@ class MyApp(wx.App):
 
 if __name__ == "__main__":
     print "DATADIR:", DATADIR
-    app = MyApp(False)
+    app = EmptyOrch(False)
     app.MainLoop()
     print "Done with app"
     app.Destroy()
