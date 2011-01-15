@@ -5,6 +5,8 @@ import stat
 import glob
 import time
 import pickle
+import random
+import urllib2
 import zipfile
 import threading
 import ConfigParser
@@ -236,6 +238,9 @@ class MyApp(wx.App):
         self.media_list.AddRclickItem(
             "Add to Playlist", self.DoAddPlaylist
         )
+        self.media_list.AddRclickItem(
+            "Find Similar", self.DoFindSimilar
+        )
         self.media_list.DoPlay = self.DoPlay
         #self.printer = Printer(self.frm)
         self.printer = SongPrinter()
@@ -253,6 +258,36 @@ class MyApp(wx.App):
         self.eoAppPos = self.frm.GetPositionTuple()
         self.frm.Destroy()
 
+    def DoFindSimilar(self, evt):
+        index = self.media_list.GetSelectedId()
+        artist = self.media_list.GetItem(index, 0).GetText()
+        if index != -1:
+            u = urllib2.urlopen(
+            "http://ws.audioscrobbler.com/2.0/artist/%s/similar.txt" % ( 
+                    artist.replace(" ", "+")
+                )
+            )
+
+            similars = []
+            for line in u.readlines():
+                similars.append(line.split(",")[2].strip())
+        
+        idlist = range(len(similars))
+        random.shuffle(idlist)
+        found = False
+        for index in idlist:
+            self.media_list.SearchData(similars[index], 0)
+            if self.media_list.GetItemCount() > 0:
+                print "Found:", self.media_list.GetItemCount()
+                print "%s is similar to %s" % (similars[index], artist)
+                self._updateStatus(
+                    "%s is similar to %s.  Clear the search and try again for more suggestions." % (similars[index], artist)
+                )
+                found = True
+                break
+        if not found:
+            self._updateStatus("Could not find anyone similar to %s" % artist)
+
     def OnDoSearch(self, evt):
         val = self.search.GetValue()
         if val:
@@ -260,10 +295,16 @@ class MyApp(wx.App):
             self.media_list.SearchData(val)
         else:
             self.OnSearchCancel(evt)
+        self._updateStatus("Search found %s songs" %
+                self.media_list.GetItemCount()
+        )
 
     def OnSearchCancel(self, evt):
         print "Cancel search"
         self.media_list.ClearSearch()
+        self._updateStatus("Showing %s songs" %
+                self.media_list.GetItemCount()
+        )
         self.search.SetValue('')
 
     def setScanDir(self):
@@ -387,16 +428,11 @@ class MyApp(wx.App):
         path = None
         archive = None
 
-        index = -1
-        for i in range(self.media_list.GetSelectedItemCount()):
-            index = self.media_list.GetNextItem(
-                item=index,
-                state=wx.LIST_STATE_SELECTED
-            )
+        index = self.media_list.GetSelectedId()
+        if index != -1:
             filetype = self.media_list.GetItem(index, 3).GetText()
             path = self.media_list.GetItem(index, 4).GetText()
             archive = self.media_list.GetItem(index, 5).GetText()
-            break
 
         if filetype:
             if filetype == '.zip':
@@ -411,12 +447,8 @@ class MyApp(wx.App):
                 dlg.Destroy()
 
     def addToPlaylist(self, data=None):
-        index = -1
-        for i in range(self.media_list.GetSelectedItemCount()):
-            index = self.media_list.GetNextItem(
-                item=index,
-                state=wx.LIST_STATE_SELECTED
-            )
+        index = self.media_list.GetSelectedId()
+        if index != -1:
             self.playlist.addToList(
                     self.media_list.GetItem(index, 0).GetText(),
                     self.media_list.GetItem(index, 1).GetText(),

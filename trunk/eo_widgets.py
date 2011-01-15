@@ -41,11 +41,14 @@ class SortVirtList(
         listmix.ListCtrlAutoWidthMixin.__init__(self)
         listmix.ColumnSorterMixin.__init__(self, 20)
 
-    def SearchData(self, term):
+    def SearchData(self, term, col=None):
         index = -1
         searchData = {}
         for row in self.rows:
-            coldata = " ".join(row)
+            if not col is None:
+                coldata = row[col] 
+            else:
+                coldata = " ".join(row)
             found = True
             terms = term.split()
             for item in terms:
@@ -250,8 +253,17 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         self.AddRclickItem("Play", self._DoPlay)
         self.AddRclickItem("Edit", self.DoEdit)
 
+    def GetSelectedId(self):
+        index = -1
+        for i in range(self.GetSelectedItemCount()):
+            index = self.GetNextItem(
+                item=index,
+                state=wx.LIST_STATE_SELECTED
+            )
+            break
+        return index
+
     def OnRClick(self, evt):
-        print "EditMediaList RClick"
         menu = wx.Menu()
         count = 0
         # Kludge since we need to retain the menu evt click in case 
@@ -259,15 +271,11 @@ class EditMediaList(SortVirtList, listmix.TextEditMixin):
         self._menu_evt = evt
         for title, callback in self._rclick_items:
             count += 1
-            print count, title
             menu.Append( count, title )
             wx.EVT_MENU( menu, count, callback )
             #self.Bind(wx.EVT_MENU, callback, count)
         self.PopupMenu( menu, evt.GetPoint() )
         menu.Destroy()
-
-    def OnRclickMenu(self, evt):
-        print "You selected", evt.GetId()
 
     def OnLeftDown(self, evt=None):
         """ Only select with a single click """
