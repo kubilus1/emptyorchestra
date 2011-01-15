@@ -64,41 +64,11 @@
             <object class="wxBoxSizer">
               <orient>wxVERTICAL</orient>
               <object class="sizeritem">
-                <object class="wxListCtrl" name="media_list" subclass="eo_widgets.MusicList">
-                  <bg>#E6E6FA</bg>
-                  <style>wxLC_REPORT|wxLC_SORT_ASCENDING|wxLC_VIRTUAL</style>
-                  <XRCED>
-                    <events>EVT_LIST_COL_RIGHT_CLICK</events>
-                  </XRCED>
-                </object>
-                <option>1</option>
-                <flag>wxLEFT|wxRIGHT|wxEXPAND|wxGROW</flag>
-                <border>5</border>
-              </object>
-              <object class="sizeritem">
                 <object class="wxBoxSizer">
                   <object class="sizeritem">
                     <object class="wxButton" name="playsel_btn">
                       <label>Play Selected</label>
                       <bg>#CCD6D9</bg>
-                      <font>
-                        <size>12</size>
-                        <style>normal</style>
-                        <weight>normal</weight>
-                        <underlined>0</underlined>
-                        <family>swiss</family>
-                        <face>Sans</face>
-                        <encoding>UTF-8</encoding>
-                      </font>
-                      <XRCED>
-                        <events>EVT_BUTTON</events>
-                      </XRCED>
-                    </object>
-                  </object>
-                  <object class="sizeritem">
-                    <object class="wxButton" name="addplay_btn">
-                      <label>Add to Playlist</label>
-                      <bg>#C3D9C3</bg>
                       <font>
                         <size>12</size>
                         <style>normal</style>
@@ -134,8 +104,21 @@
                   <orient>wxHORIZONTAL</orient>
                 </object>
                 <flag>wxALL|wxEXPAND</flag>
-                <border>2</border>
+                <border>5</border>
               </object>
+              <object class="sizeritem">
+                <object class="wxListCtrl" name="media_list" subclass="eo_widgets.MusicList">
+                  <bg>#E6E6FA</bg>
+                  <style>wxLC_REPORT|wxLC_SORT_ASCENDING|wxLC_VIRTUAL</style>
+                  <XRCED>
+                    <events>EVT_LIST_COL_RIGHT_CLICK</events>
+                  </XRCED>
+                </object>
+                <option>1</option>
+                <flag>wxLEFT|wxRIGHT|wxEXPAND|wxGROW</flag>
+                <border>5</border>
+              </object>
+            
             </object>
             <size>200</size>
           </object>
