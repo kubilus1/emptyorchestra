@@ -52,9 +52,9 @@ def _fix_my_import(name):
 
     return mod
 
+if os.path.basename(DATADIR) == "library.zip":
+    DATADIR = os.path.dirname(DATADIR)
 if os.name == "nt":
-    if os.path.basename(DATADIR) == "library.zip":
-        DATADIR = os.path.dirname(DATADIR)
     xrc._my_import = _fix_my_import
 
 
