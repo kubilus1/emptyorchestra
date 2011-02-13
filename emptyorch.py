@@ -220,15 +220,6 @@ class EmptyOrch(wx.App):
         self.Bind(wx.EVT_MENU, self.OnMenu_PageSetup, id=xrc.XRCID('PageSetup'))
         self.Bind(wx.EVT_MENU, self.OnMenu_SetDirs, id=xrc.XRCID('SetDirs'))
 
-        # Add some special controls
-        try:
-            self.mc = wx.media.MediaCtrl(self.frm, style=wx.SIMPLE_BORDER)
-            self.Bind(wx.media.EVT_MEDIA_STOP, self.OnMedia_stop)
-            self.Bind(wx.media.EVT_MEDIA_FINISHED, self.OnMedia_finished)
-        except NotImplementedError:
-            self.Destroy()
-            raise
-
         #self.st_size = wx.StaticText(self.media_panel, 0, size=(100,-1))
         #self.st_len  = wx.StaticText(self.media_panel, -1, size=(100,-1))
         #self.st_pos  = wx.StaticText(self.media_panel, -1, size=(100,-1))
@@ -440,16 +431,6 @@ class EmptyOrch(wx.App):
         else:
             self.playthread = threading.Thread(target=self.player.WaitForPlayer)
             self.playthread.start()
-        #if not self.mc.Load(path):
-        #    wx.MessageBox("Unable to load %s: Unsupported format?" % path, "ERROR", wx.ICON_ERROR | wx.OK)
-        #else:
-        #    folder, filename = os.path.split(path)
-        #    self.st_file.SetLabel('%s' % filename)
-        #    self.mc.SetBestFittingSize()
-        #    self.frm.GetSizer().Layout()
-        #    self.slider.SetRange(0, self.mc.Length())
-        #    self.mc.Play()
-        #self.player.shutdown() 
 
     def OnButton_addplay_btn(self, evt):
         self.DoAddPlaylist(evt)
@@ -534,21 +515,15 @@ class EmptyOrch(wx.App):
         self.loadNextItem()
 
     def onTimer(self, evt):
-        offset = self.mc.Tell()
-        self.slider.SetValue(offset)
-        #self.st_size.SetLabel('size: %s ms' % self.mc.Length())
-        #self.st_len.SetLabel('( %d seconds )' % (self.mc.Length()/1000))
-        #self.st_pos.SetLabel('position: %d ms' % offset)
+        pass
 
     def OnScroll_slider(self, evt):
         offset = self.slider.GetValue()
-        self.mc.Seek(offset)
 
     def OnScroll_volume_sl(self, evt):
         offset = self.volume_sl.GetValue()
         volume = float(offset) / 100.0
         print "VOLUME:", volume
-        self.mc.SetVolume(volume)
 
     def getFileInfoFromMeta(self, filepath):
         artist = ''
