@@ -49,12 +49,19 @@ class SortVirtList(
                 coldata = row[col] 
             else:
                 coldata = " ".join(row)
+            if not coldata:
+                continue
             found = True
             terms = term.split()
-            for item in terms:
-                if item.lower() not in coldata.lower():
-                    found = False
-                    break
+            try:
+                for item in terms:
+                    if item.lower() not in coldata.lower():
+                        found = False
+                        break
+            except TypeError:
+                print "COLDATA:", coldata
+                print "ITEM:", item
+
             if found:
                 index += 1
                 searchData[index] = row
