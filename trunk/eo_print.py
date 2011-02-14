@@ -11,7 +11,12 @@ class NewPrinter():
         self.frame = frame
 
     def Preview(self, data):
-        data.sort(lambda a, b: cmp(a[0].lower(), b[0].lower()))
+        data.sort(
+            lambda a, b: cmp(
+                a[0].lower().replace('the ','').strip(), 
+                b[0].lower().replace('the ','').strip(), 
+            )
+        )
         new_data = []
         for val in data:
             new_data.append([val[0], val[1]])
@@ -22,9 +27,9 @@ class NewPrinter():
         prt.data = new_data
         prt.set_column = [1,1]
         prt.label = header
-        prt.num_regions = 3
+        prt.num_regions = 3 
         prt.SetHeader("Song Printout")
-        prt.SetFooter("Page No", type="Num")
+        prt.SetFooter("Page No ", type="Num")
         prt.Preview()
 
 
@@ -449,8 +454,8 @@ class EOPrintTableDraw(PrintTableDraw):
         self.col = 0 
         max_y = 0
 
-        print "-------------"
-        print "ROWVAL:", row_val
+        #print "-------------"
+        #print "ROWVAL:", row_val
 
         for vtxt in row_val:
             if not isinstance(vtxt,types.StringTypes):
@@ -459,13 +464,13 @@ class EOPrintTableDraw(PrintTableDraw):
             #self.indent = self.column[self.col]
             self.indent = self.column[self.col] + (regnum * self.colwidth)
 
-            print "Self.Col:", self.col
-            print "COLWIDTH:", self.colwidth
-            print "Regnum:", regnum
-            print "Self.Region:", self.region
-            print "Self.Indent:", self.indent
-            print "vtxt:", vtxt
-            print "Draw:", draw
+            #print "Self.Col:", self.col
+            #print "COLWIDTH:", self.colwidth
+            #print "Regnum:", regnum
+            #print "Self.Region:", self.region
+            #print "Self.Indent:", self.indent
+            #print "vtxt:", vtxt
+            #print "Draw:", draw
             self.align = self.column_align[self.col]
 
             fcolour = self.column_txtcolour[self.col]       # set font colour
