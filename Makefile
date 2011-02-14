@@ -12,6 +12,7 @@ all:
 	@echo "make install - Install on local system"
 	@echo "make buildrpm - Generate a rpm package"
 	@echo "make builddeb - Generate a deb package"
+	@echo "make windows - Make a bfreeze package"
 	@echo "make clean - Get rid of scratch and byte files"
 
 source:
@@ -26,12 +27,12 @@ buildrpm:
 builddeb:
 	# build the source package in the parent directory
 	# then rename it to project_version.orig.tar.gz
-	$(PYTHON) setup.py sdist $(COMPILE) --dist-dir=release/ --prune
-	rename -f 's/$(PROJECT)-(.*)\.tar\.gz/$(PROJECT)_$$1\.orig\.tar\.gz/' release/*
+	$(PYTHON) setup.py sdist $(COMPILE) --dist-dir=../ --prune
+	rename -f 's/$(PROJECT)-(.*)\.tar\.gz/$(PROJECT)_$$1\.orig\.tar\.gz/' ../*
 	# build the package
 	dpkg-buildpackage -i -I -rfakeroot
 
-windows:
+bfreeze:
 	python bfreeze.py
 
 clean:
