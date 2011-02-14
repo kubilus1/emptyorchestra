@@ -337,6 +337,7 @@ class EmptyOrch(wx.App):
             path = dlg.GetPath()
             print "Setting Dir to :", path
             self.scandirs = [path,]
+            self.media_list.scantime = 0
         dlg.Destroy()
 
     def OnMenu_SetDirs(self, evt):
@@ -649,7 +650,7 @@ class EmptyOrch(wx.App):
     def scanDirs(self):
         print "ScanDirs"
         for scandir in self.scandirs:
-            print "Scanning: %s", scandir
+            print "Scanning: %s" % scandir
             self.findKaraoke(scandir)
 
     def findKaraoke(self, path):

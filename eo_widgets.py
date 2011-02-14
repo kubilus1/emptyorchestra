@@ -81,6 +81,8 @@ class SortVirtList(
     def estimateLens(self):
         headers = self.headers
         rows = self.rows
+        if not rows:
+            return
 
         buffer = 5
         rowrange = range(len(rows[0]))
