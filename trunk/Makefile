@@ -31,6 +31,9 @@ builddeb:
 	# build the package
 	dpkg-buildpackage -i -I -rfakeroot
 
+windows:
+	python bfreeze.py
+
 clean:
 	$(PYTHON) setup.py clean
 	$(MAKE) -f $(CURDIR)/debian/rules clean
