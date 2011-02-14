@@ -33,6 +33,9 @@ from pycdg import cdgPlayer
 from pykconstants import *
 
 DATADIR = os.path.dirname(emptyorch_xrc.__file__)
+if os.path.basename(DATADIR) == "library.zip":
+    # If we are using a frozen package set the DATADIR
+    DATADIR = os.path.dirname(DATADIR)
 
 def _fix_my_import(name):
     """_fix_my_import  Fix issue specific to nt"""
@@ -52,8 +55,6 @@ def _fix_my_import(name):
 
     return mod
 
-if os.path.basename(DATADIR) == "library.zip":
-    DATADIR = os.path.dirname(DATADIR)
 if os.name == "nt":
     xrc._my_import = _fix_my_import
 
