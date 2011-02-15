@@ -27,7 +27,7 @@ import pygame
 
 import emptyorch_xrc
 from eo_widgets import Playlist_list 
-from eo_print import SongPrinter, Printer, NewPrinter
+from eo_print import SongPrinter
 
 from pycdg import cdgPlayer
 from pykconstants import *
@@ -250,8 +250,7 @@ class EmptyOrch(wx.App):
             "Find Similar", self.DoFindSimilar
         )
         self.media_list.DoPlay = self.DoPlay
-        #self.printer = Printer(self.frm)
-        self.printer = SongPrinter()
+        self.printer = SongPrinter(self.frm)
         print "Songs:", len(self.media_list.rows)
         self.frm.Show()
         self.frm.SetStatusText("Songs: %s" % len(self.media_list.rows))
@@ -367,11 +366,7 @@ class EmptyOrch(wx.App):
 
     def OnMenu_PrintPreview(self, evt):
         "OnMenu_PrintPreview  Callback to preview the print."""
-        #self.printer.PreviewText(data, "FOO")
-
-        #self.printer.PreviewText(self.media_list.rows, "Songs")
-        printer = NewPrinter(self.frm)
-        printer.Preview(self.media_list.rows)
+        self.printer.Preview(self.media_list.rows)
 
     def OnMenu_PageSetup(self, evt):
         """OnMenu_PageSetup  Show the page setup dialog."""
