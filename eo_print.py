@@ -1,3 +1,4 @@
+import math
 import types
 
 import wx
@@ -24,11 +25,10 @@ class SongPrinter():
 
         header = ['artist', 'song'] 
 
-        prt = EOPrintTable(self.frame)
+        prt = EOPrintTable(self.frame, num_regions=3)
         prt.data = new_data
         prt.set_column = [1.2,1.2]
         prt.label = header
-        prt.num_regions = 3 
         prt.SetHeader("Song Printout")
         prt.SetFooter("Page No ", type="Num")
         prt.Preview()
@@ -69,9 +69,10 @@ class EOPrintTableDraw(PrintTableDraw):
         self.space = y
 
         if self.total_pages is None:
+            print "Initializing printout."
             self.GetTotalPages()    # total pages for display/printing
 
-        self.data_cnt = self.page_index[self.page-1] * 3
+        self.data_cnt = self.page_index[self.page-1] * self.num_regions
 
         self.draw = True
         self.PrintHeader()
@@ -93,7 +94,7 @@ class EOPrintTableDraw(PrintTableDraw):
                 break
             cnt = cnt + 1
 
-        self.total_pages = cnt + 1
+        self.total_pages = math.ceil(float(cnt + 1) / float(self.num_regions))
         print "TOTAL:", self.total_pages
 
     def OutPage(self, regnum=0):
@@ -126,6 +127,7 @@ class EOPrintTableDraw(PrintTableDraw):
                     fits = True
                 self.fitcache[i] = fits
             else:
+                #print "Cached: %s" % i
                 fits = self.fitcache[i]
 
             if not fits and not newpage:
@@ -292,22 +294,30 @@ class EOPrintTableDraw(PrintTableDraw):
 
 
 class EOPrintTable(PrintTable):
-    def __init__(self, *args, **kwds):
-        self.num_regions = 1
-        PrintTable.__init__(self, *args, **kwds)
+    table = None
+#    def __init__(self, *args, **kwds):
+    def __init__(self, parent, num_regions=1):
+        self.num_regions = num_regions
+        PrintTable.__init__(self, parent)
 
     def DoDrawing(self, DC):
         print "self.PrintTable.DoDrawing"
         size = DC.GetSize()
         DC.BeginDrawing()
+        
+        if self.table is None:
+            print "Initializing EOPrintTableDraw"
+            self.table = EOPrintTableDraw(self, DC, size)
+        else:
+            self.table.DC = DC
 
-        table = EOPrintTableDraw(self, DC, size)
+        table = self.table
         table.data = self.data
         print "Datalen:", len(table.data)
         table.set_column = self.set_column
         table.label = self.label
         table.SetPage(self.page)
-        print self.page
+        print "Page:", self.page
 
         if self.preview is None:
             table.SetPSize(size[0]/self.page_width, size[1]/self.page_height)
