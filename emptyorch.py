@@ -362,7 +362,7 @@ class EmptyOrch(wx.App):
         
     def OnMenu_Print(self, evt):
         """OnMenu_Print   Callback to print the song list."""
-        self.printer.Print(self.media_list.rows, "Songs")
+        self.printer.Print(self.media_list.rows)
 
     def OnMenu_PrintPreview(self, evt):
         "OnMenu_PrintPreview  Callback to preview the print."""
