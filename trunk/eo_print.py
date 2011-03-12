@@ -6,13 +6,17 @@ from wx.html import HtmlEasyPrinting
 from wx import Printout, PrintData, PAPER_LETTER, PrintDialogData
 from wx import Printer as wxPrinter, MessageBox, PrintPreview, PrintDialog
 #import  wx.lib.printout as  printout
-from wx.lib.printout import PrintTable, PrintTableDraw
+from wx.lib.printout import PrintTable, PrintTableDraw, SetPrintout
 
 class SongPrinter():
     def __init__(self, frame):
         self.frame = frame
+        self.printer_config = wx.PrintData()
+        self.printer_config.SetPaperId(wx.PAPER_LETTER)
+        self.printer_config.SetOrientation(wx.LANDSCAPE)
+        self.prt = EOPrintTable(self.frame, num_regions=3)
 
-    def Preview(self, data):
+    def _setupData(self, data):
         data.sort(
             lambda a, b: cmp(
                 a[0].lower().replace('the ','').strip(), 
@@ -25,13 +29,30 @@ class SongPrinter():
 
         header = ['artist', 'song'] 
 
-        prt = EOPrintTable(self.frame, num_regions=3)
-        prt.data = new_data
-        prt.set_column = [1.2,1.2]
-        prt.label = header
-        prt.SetHeader("Song Printout")
-        prt.SetFooter("Page No ", type="Num")
-        prt.Preview()
+        self.prt.data = new_data
+        self.prt.set_column = [1.2,1.2]
+        self.prt.label = header
+        self.prt.SetHeader("Song Printout")
+        self.prt.SetFooter("Page No ", type="Num")
+
+    def Print(self, data):
+        self._setupData(data)
+        self.prt.Print()
+
+    def Preview(self, data):
+        self._setupData(data)
+        self.prt.Preview()
+
+    def PageSetup(self):
+        "This function handles displaying the Page Setup window and retrieving the user selected options."
+        config_dialog = wx.PageSetupDialog(self.frame)   #replaces PrintDialog
+        config_dialog.GetPageSetupData()
+        print self.printer_config        
+        config_dialog.ShowModal()
+        self.printer_config = config_dialog.GetPageSetupData()
+        print self.printer_config
+        config_dialog.Destroy()
+        self.prt.SetPrintConfig(self.printer_config)
 
 
 class EOPrintTableDraw(PrintTableDraw):
@@ -47,8 +68,9 @@ class EOPrintTableDraw(PrintTableDraw):
         PrintTableDraw.AdjustValues(self)
         self.region_margin = 20
         self.colwidth = self.column[-1] - self.column[0] + self.region_margin
-        print "self.column:", self.column
-        print "self.column_align:", self.column_align
+        #print "self.column:", self.column
+        #print "self.column_align:", self.column_align
+        #print "self.num_regions:", self.num_regions
 
     def OutCanvas(self):
         print "PrintTableData.OutCanvas"
@@ -297,8 +319,12 @@ class EOPrintTable(PrintTable):
     table = None
 #    def __init__(self, *args, **kwds):
     def __init__(self, parent, num_regions=1):
-        self.num_regions = num_regions
         PrintTable.__init__(self, parent)
+        self.num_regions = num_regions
+
+    def SetPrintConfig(self, data):
+        self.pageSetupData = data
+        self.printData = self.pageSetupData.GetPrintData()
 
     def DoDrawing(self, DC):
         print "self.PrintTable.DoDrawing"
@@ -344,6 +370,23 @@ class EOPrintTable(PrintTable):
         self.sizeh = size[0]
         self.sizew = size[1]
 
+    def Preview(self):
+        print "Print Preview!---------->"
+        data = wx.PrintDialogData(self.printData)
+        printout = SetPrintout(self)
+        self.preview = wx.PrintPreview(printout, None, data)
+        if not self.preview.Ok():
+            wx.MessageBox("There was a problem printing!", "Printing", wx.OK)
+            return
+
+        self.preview.SetZoom(110)        # initial zoom value
+        frame = wx.PreviewFrame(self.preview, self.parentFrame, "Print preview")
+
+        frame.Initialize()
+        if self.parentFrame:
+            frame.SetPosition(self.preview_frame_pos)
+            frame.SetSize(self.preview_frame_size)
+        frame.Show(True)
 
 def testPrinter():
     app = wx.PySimpleApp()
@@ -370,6 +413,7 @@ def testPrintTable():
     p = SongPrinter(frame)
 
     p.Preview(somedata)
+    #p.Print(somedata)
     app.MainLoop()
 
 if __name__ == "__main__":
