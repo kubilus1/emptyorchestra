@@ -12,7 +12,7 @@ all:
 	@echo "make install - Install on local system"
 	@echo "make buildrpm - Generate a rpm package"
 	@echo "make builddeb - Generate a deb package"
-	@echo "make windows - Make a bfreeze package"
+	@echo "make bfreeze - Make a bfreeze package"
 	@echo "make clean - Get rid of scratch and byte files"
 
 source:
