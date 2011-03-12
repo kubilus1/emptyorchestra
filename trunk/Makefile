@@ -39,5 +39,5 @@ clean:
 	$(PYTHON) setup.py clean
 	$(MAKE) -f $(CURDIR)/debian/rules clean
 	rm -rf build/ MANIFEST
-	rm -rf bfreeeze/
+	rm -rf bfreeze/
 	find . -name '*.pyc' -delete
