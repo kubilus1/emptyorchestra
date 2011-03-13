@@ -205,6 +205,7 @@
                   <max>100</max>
                   <bg>#1E90FF</bg>
                   <tooltip>Volume</tooltip>
+                  <hidden>1</hidden>
                   <style>wxSL_VERTICAL|wxSL_INVERSE</style>
                   <XRCED>
                     <events>EVT_SCROLL|EVT_SCROLL</events>
