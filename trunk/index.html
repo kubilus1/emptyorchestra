@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<div id="whole">
+    <head id="head">
+        <link rel="stylesheet" type="text/css" href="css/widgets.css">
+        <link rel="stylesheet" type="text/css" href="css/general.css">
+        <link rel="stylesheet" type="text/css" href="css/main.css">
+        <link rel="stylesheet" type="text/css" href="css/simplegrid.css">
+        <meta name="author" content="Matt Kubilus" />
+        <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+        <title>Empty Orchestra</title>
+        <script type="text/javascript" src="/js/jquery.js"></script> 
+        <script type="text/javascript" src="/js/jquery.form.js"></script> 
+        <script type="text/javascript" src="/js/json2.js"></script>
+        <script type="text/javascript" src="/js/ajax_stuff.js"></script>
+        <script type="text/javascript"> 
+
+InstallFunction(server, 'do_local_query');
+InstallFunction(server, 'do_web_query');
+InstallFunction(server, 'do_save_song');
+
+$(document).ready(function() {
+    var inurl = document.URL;
+    var m = inurl.match(/\bindex.html\?(.*?)='(.*?)'/);
+    //alert(m[0]);
+    if(m[1] == 'say_stuff'){
+        say_stuff(m[2]);
+    }    
+});
+
+function getCookie(c_name)
+{
+    var c_value = document.cookie;
+    var c_start = c_value.indexOf(" " + c_name + "=");
+    if (c_start == -1)
+    {
+        c_start = c_value.indexOf(c_name + "=");
+    }
+    if (c_start == -1)
+    {
+        c_value = null;
+    }
+    else
+    {
+        c_start = c_value.indexOf("=", c_start) + 1;
+        var c_end = c_value.indexOf(";", c_start);
+        if (c_end == -1)
+        {
+            c_end = c_value.length;
+        }
+        c_value = unescape(c_value.substring(c_start,c_end));
+    }
+    return c_value;
+}
+
+function setCookie(c_name,value,exdays)
+{
+    var exdate=new Date();
+    exdate.setDate(exdate.getDate() + exdays);
+    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+    document.cookie=c_name + "=" + c_value;
+}
+
+function checkCookie()
+{
+    var username=getCookie("username");
+    if (username!=null && username!="")
+    {
+        //alert("Welcome again " + username);
+        //document.getElementById('user_data').innerHTML = "Hello ";
+        document.getElementById('user_data').innerHTML = "Hello " + username + "!  Please choose a song.";
+    }
+    else 
+    {
+    username=prompt("Please enter your username:","");
+    if (username!=null && username!="")
+        {
+        setCookie("username",username,365);
+        }
+    }
+}
+
+function say_stuff(stuff){
+    alert(stuff);
+}
+
+function onLoad(data) {
+    checkCookie();
+    //alert($(data));
+   // alert("Load");
+}
+
+function query() {
+    var search_term = document.getElementById('search_query').value; 
+    //alert("From was submitted:" + search_term);
+    server.do_local_query(search_term, onLocalReturn); 
+    server.do_web_query(search_term, onWebReturn); 
+}
+
+function save_song(artist, title, path, archive) {
+    //alert(artist+title+path);
+    var username=getCookie("username");
+    server.do_save_song(username, artist, title, path, archive);
+    document.getElementById('user_data').innerHTML = username + ", you chose to do " + unescape(artist) + " " + unescape(title) + " next!"}
+
+function onLocalReturn(response) {
+    document.getElementById('data_loc').innerHTML = response;
+}
+function onWebReturn(response) {
+    document.getElementById('data_web').innerHTML = response;
+}
+        </script>
+        </head>
+        <body onload="onLoad()">
+
+            <div class="header">
+            <div id="user_data"> </div>
+
+            <form action="javascript:query()">
+                <input type=text name=query id=search_query>
+                <input type=submit>
+            </form>
+            </div>
+
+            Local Results:
+            <div class="data" id="data_loc"> </div>
+
+            Web Results:
+            <div class="data" id="data_web"> </div>
+        </body>
+    </div>
+</html>
