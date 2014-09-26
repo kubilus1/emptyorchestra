@@ -4,11 +4,15 @@ import sys
 import stat
 import glob
 import time
+import Queue
 import pickle
+import socket
 import random
 import urllib2
 import zipfile
 import threading
+import webbrowser
+import subprocess
 import ConfigParser
 
 import wx
@@ -28,6 +32,7 @@ import pygame
 import emptyorch_xrc
 from eo_widgets import Playlist_list 
 from eo_print import SongPrinter
+import eo_web
 
 from pycdg import cdgPlayer
 from pykconstants import *
@@ -71,7 +76,7 @@ class cdgAppPlayer(cdgPlayer):
         cdgPlayer.shutdown(self)
 
 
-class EmptyOrch(wx.App):
+class EmptyOrch(wx.App, eo_web.MyTCPServer):
     """ EmptyOrch
 
     EmptyOrchestra - The python powered karaoke jukebox that aims
@@ -85,10 +90,13 @@ class EmptyOrch(wx.App):
     playthread = None
     scanthread = None
     scandirs = []
+    keep_serving = True
+    webthread = None
 
     def __init__(self, *kwds, **args):
         """ __init__  Initialize the application"""
         wx.App.__init__(self, *kwds, **args)
+        eo_web.MyTCPServer.__init__(self, ("", 8080), eo_web.MyRequestHandler)
 
     def OnInit(self):
         """OnInit   Some WxPythony initilization"""
@@ -238,9 +246,9 @@ class EmptyOrch(wx.App):
         sizer.Add(self.playlist, 1, wx.EXPAND)
         self.playlist_panel.SetSizer(sizer)
 
-        #self.timer = wx.Timer(self)
-        #self.Bind(wx.EVT_TIMER, self.onTimer)
-        #self.timer.Start(100)
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.onTimer)
+        self.timer.Start(500)
 
         self.media_list.setupData(self.songdb_path)
         self.media_list.AddRclickItem(
@@ -389,9 +397,12 @@ class EmptyOrch(wx.App):
         """doLoadFile   Load and run a karaoke file."""
         print "Load File:", path
         self.st_file.SetLabel(os.path.basename(path))
+
+        if self.player:
+            self.player.shutdown()
+
         if self.playthread:
             print "Shutting down playthread."
-            self.player.shutdown()
             self.playthread.join()
 
         if self.player:
@@ -406,8 +417,11 @@ class EmptyOrch(wx.App):
             del self.player
             self.player = None
 
-
-        if archive:
+        if archive == 'web':
+            #subprocess.call('vlc --play-and-exit %s' % path, shell=True)
+            webbrowser.open("http://localhost:8080/test.html?songid='%s'" % path, new=1)
+            return
+        elif archive:
             self.player = cdgAppPlayer(
                 path, 
                 size = self.cdgSize,
@@ -464,10 +478,13 @@ class EmptyOrch(wx.App):
             finally:
                 dlg.Destroy()
 
-    def addToPlaylist(self, data=None):
-        index = self.media_list.GetSelectedId()
+    def addToPlaylist(self, data=None, index=None):
+        print "Add to playlist"
+        if index is None:
+            index = self.media_list.GetSelectedId()
         if index != -1:
             self.playlist.addToList(
+                    'local',
                     self.media_list.GetItem(index, 0).GetText(),
                     self.media_list.GetItem(index, 1).GetText(),
                     self.media_list.GetItem(index, 4).GetText(),
@@ -475,17 +492,24 @@ class EmptyOrch(wx.App):
             )
 
     def loadCurItem(self):
-        artist, title, path, archive = self.playlist.getCurrent()
+        print "loadCurItem"
+        singer, artist, title, path, archive = self.playlist.getCurrent()
+        self.playlist.delItem(singer, artist, title, path, archive)
         self.doLoadFile(path, archive)
 
     def loadNextItem(self):
+        print "loadNextItem"
         self.playlist.selectNext()
-        artist, title, path, archive = self.playlist.getCurrent()
+        singer, artist, title, path, archive = self.playlist.getCurrent()
+        self.playlist.delItem(singer, artist, title, path, archive)
         self.doLoadFile(path, archive)
 
+
     def loadPrevItem(self):
+        print "loadPrevItem"
         self.playlist.selectPrev()
-        artist, title, path, archive = self.playlist.getCurrent()
+        singer, artist, title, path, archive = self.playlist.getCurrent()
+        self.playlist.delItem(singer, artist, title, path, archive)
         self.doLoadFile(path, archive)
 
     def OnMedia_stop(self, evt):
@@ -515,7 +539,15 @@ class EmptyOrch(wx.App):
         self.loadNextItem()
 
     def onTimer(self, evt):
-        pass
+        try:
+            i = self.sync_queue.get(block=False)
+            if i:
+                print "GOT: ", i
+                self.playlist.addToList(i[0],i[1],i[2],i[3],i[4])
+                print "Done adding."
+        except Queue.Empty:
+            pass
+            #print "No data yet..."
 
     def OnScroll_slider(self, evt):
         offset = self.slider.GetValue()
@@ -777,8 +809,6 @@ class EmptyOrch(wx.App):
                         filename, info.compress_type
                     )
 
-
-
     def OnButton_choose_btn(self, evt):
         path = self.file_tree.GetPath()
         if os.path.isfile(path):
@@ -794,6 +824,31 @@ class EmptyOrch(wx.App):
 if __name__ == "__main__":
     print "DATADIR:", DATADIR
     app = EmptyOrch(False)
+
+    #print "MediaList:", app.media_list.rows
+    print "---------------------"
+    print "EmptyOrchestra Server"
+
+    with open('css/main.css') as h:
+        css = h.read()
+    with open('css/simplegrid.css') as h:
+        css = css + h.read()
+
+    hostname = ""
+    PORT = 8080
+    #handler = eo_web.MyRequestHandler
+    #httpd = eo_web.MyTCPServer((hostname, PORT), handler)
+    #httpd.server_name = hostname
+    #httpd.server_port = PORT
+
+    print "  at port %s" % PORT
+    web_thread = threading.Thread(target=app.serve_it)
+    web_thread.start()
+    
+    #playlist_thread = threading.Thread(target=app.update_playlist)
+    #playlist_thread.start()
+
     app.MainLoop()
     print "Done with app"
     app.Destroy()
+    #web_thread.join(5)
