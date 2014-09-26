@@ -65,6 +65,8 @@ class SortVirtList(
             if found:
                 index += 1
                 searchData[index] = row
+                print row
+
         self.itemDataMap = searchData
         self.itemIndexMap = self.itemDataMap.keys()
         self.SetItemCount(len(self.itemDataMap))
@@ -406,6 +408,9 @@ class MusicList(EditMediaList):
 
 class Playlist_list(gizmos.EditableListBox):
 #class Playlist_list(wx.ListCtrl):
+
+    singers = {}
+
     def __init__(self, *args, **kwds):
         gizmos.EditableListBox.__init__(self, *args, **kwds)
 
@@ -426,10 +431,37 @@ class Playlist_list(gizmos.EditableListBox):
         self.itemIndexMap = self.itemDataMap.keys()
         self.SetItemCount(len(self.itemDataMap))
 
-    def addToList(self, artist, title, filename, archive):
+    def addToList(self, singer, artist, title, filename, archive):
         strings = self.GetStrings()
-        strings.append("  |  ".join((artist, title, filename, archive)))
+        if singer != 'local':
+            singer_pos = self.singers.get(singer)
+            if singer_pos:
+                print "Singer found: ", singer
+            else:
+                singer_pos = len(self.singers)
+                self.singers[singer] = singer_pos
+                print "Added singer %s at #%s" % (singer, singer_pos)
+
+            for idx in range(len(strings)):
+                if strings[idx].split("  |  ")[0] == singer:
+                    print "Already had a song, removing."
+                    strings.pop(idx)
+                    print "Inserting new song..."
+                    strings.insert(idx, "  |  ".join((singer, artist, title, filename, archive)))
+                    print "Saving data."
+                    self.SetStrings(strings)
+                    print "All set."
+                    return 
+
+        strings.append("  |  ".join((singer, artist, title, filename, archive)))
         self.SetStrings(strings)
+        print "Added to list:", self.GetStrings()
+
+    def delItem(self, singer, artist, title, filename, archive):
+        strings = self.GetStrings()
+        strings.remove("  |  ".join((singer, artist, title, filename, archive)))
+        self.SetStrings(strings)
+        print "Removed from list:", self.GetStrings()
 
     def getCurrent(self):
         index = -1

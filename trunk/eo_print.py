@@ -103,7 +103,6 @@ class EOPrintTableDraw(PrintTableDraw):
             self.OutPage(i)
 
     def GetTotalPages(self):
-        print "Real Get Total Pages"
         self.data_cnt = 0
         self.draw = False
         self.page_index = [0]
@@ -117,7 +116,7 @@ class EOPrintTableDraw(PrintTableDraw):
             cnt = cnt + 1
 
         self.total_pages = math.ceil(float(cnt + 1) / float(self.num_regions))
-        print "TOTAL:", self.total_pages
+        print "REAL total pages:", self.total_pages
 
     def OutPage(self, regnum=0):
         newpage = True
@@ -378,6 +377,9 @@ class EOPrintTable(PrintTable):
         if not self.preview.Ok():
             wx.MessageBox("There was a problem printing!", "Printing", wx.OK)
             return
+    def GetTotalPages(self):
+        self.page_total = 999 
+        return self.page_total
 
         self.preview.SetZoom(110)        # initial zoom value
         frame = wx.PreviewFrame(self.preview, self.parentFrame, "Print preview")
