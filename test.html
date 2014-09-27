@@ -51,8 +51,8 @@ $(document).ready(function() {
         //var m = inurl.match(/\btest.html\?(.*?)='(.*?)'/);
         //alert(m[0]);
         player = new YT.Player('player', {
-          height: '768',
-          width: '1024',
+          height: '600',
+          width: '800',
           videoId: videoid,
           playerVars: { 'controls': 1, 'wmode': "opaque", 'rel': 0, 'enablejsapi': 1, 'fs': 1},
 
@@ -84,7 +84,8 @@ $(document).ready(function() {
       }
 
       function playerError(event) {
-        alert("Player error!");
+        //alert("Player error!");
+        window.location.replace('http://www.youtube.com/watch?v='+videoid);
       }
     </script>
 

@@ -174,22 +174,25 @@ class MyRequestHandler(CGIHTTPServer.CGIHTTPRequestHandler):
         req = requests.get(youtube_url)
         #print req.text
         req_data = json.loads(req.text)
-
         f = StringIO()
         for item in req_data['data']['items']:
             print item.get('id') 
+            title = item.get('title')
+            print title
+
+            print item
+            enc_title = title.encode('utf-8')
             f.write("<div class='grid grid-pad'>")
+            f.write("<div class='alink clear'>")
             f.write("<a href='#' onclick=\"save_song('%s', '%s', '%s', '%s');\">" % (
-                item.get('title').encode('utf-8'),
+                urllib.quote(enc_title),
                 '',
                 urllib.quote(item.get('id')),
                 'web'
             ))
            
-            f.write("<div class='alink clear'>")
             f.write("<div class='col-1-4'>")
             f.write("<div class='content'>")
-            print item.get('title')
             f.write(item.get('title').encode('utf-8'))
             f.write("</div></div>")
             
