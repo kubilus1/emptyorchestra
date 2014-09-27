@@ -32,7 +32,7 @@ builddeb:
 	# build the package
 	dpkg-buildpackage -i -I -rfakeroot
 
-bfreeze:
+bfreeze_dist:
 	python bfreeze.py
 
 clean:

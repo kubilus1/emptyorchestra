@@ -21,12 +21,22 @@ font-size:medium;
 margin:5px;
 }
 body {
+    font-family: arial; color: #606060; background: #DADADA
     padding:20px;
     /*margin: auto;*/
     border:1px solid #DDDDDD;
     background-color: #EEEEEF;
     /*background-image:url('/site_media/images/gear.png');*/
     /*background-repeat:no-repeat;*/
+    max-width: 800px;
+    width:100%;
+    display:block;
+}
+.header {
+    position: fixed;
+    background-color: #DDDDFF;
+    max-width: 800px;
+    width:100%;
 }
 A{ font-family: arial; color: #808080; background: #DADADA}
 A:link   { text-decoration: none; }
