@@ -1,0 +1,7 @@
+<h3>Who's next....<h3>
+
+<ol>
+    {% for item in queue %}
+    <li> {{ item.username }} - {{ item.title }} </li>
+    {% endfor %}
+</ol>

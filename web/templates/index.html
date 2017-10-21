@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<div id="whole">
+    <head id="head">
+    <!--<link rel="stylesheet" type="text/css" href="css/widgets.css">-->
+        <!--<link rel="stylesheet" type="text/css" href="css/general.css">-->
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/simplegrid.css') }}">
+        <meta name="author" content="Matt Kubilus" />
+        <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+        <title>Empty Orchestra</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script src="{{ url_for('static', filename='js/wcdg.js') }}"></script>
+        <script type="text/javascript"> 
+
+function onLoad(data) {
+    //checkCookie();
+    //alert($(data));
+   // alert("Load");
+}
+
+function query() {
+    var search_term = document.getElementById('search_query').value; 
+    console.log("Search term:" + search_term);
+    //alert("From was submitted:" + search_term);
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('search_local') }}",
+        data: {'term':search_term},
+        async: true,
+        success: function(data) {
+            console.log("Local return: " + data);
+            $('#data_loc').html(data);
+        }
+    });
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('search_web') }}",
+        data: {'term':search_term},
+        async: true,
+        success: function(data) {
+            console.log("Web return: " + data);
+            $('#data_web').html(data);
+        }
+    });
+    //server.do_local_query(search_term, onLocalReturn); 
+    //server.do_web_query(search_term, onWebReturn); 
+}
+
+function do_save_song(artist, title, path, archive) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('save_song') }}",
+        data: {
+            'artist':artist,
+            'title':title,
+            'path':path,
+            'archive':archive
+        },
+        async: true,
+        success: function(data) {
+            console.log("Save song success: " + data);
+            $('#user_data').html("You chose " + unescape(title) + " next!");
+        }
+
+    });
+    
+}
+
+function do_play_song(artist, title, path, archive) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('play_song') }}",
+        data: {
+            'artist':artist,
+            'title':title,
+            'path':path,
+            'archive':archive
+        },
+        async: true,
+        success: function(data) {
+            console.log("Play song success: ");
+            $('#play').html(data);
+        }
+
+    });
+    
+}
+function do_play_cdg(artist, title, path, archive) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('play_song') }}",
+        data: {
+            'artist':artist,
+            'title':title,
+            'path':path,
+            'archive':archive
+        },
+        async: true,
+        success: function(data) {
+            $('#play_cdg').html(data);
+            console.log("Play song success: ");
+            var player2 = new CDGPlayer(document.getElementById('karaoke-display'));
+            var timestamp = +new Date;
+            
+            $('#song').bind("playing", function() {
+                console.log("Event: playing.");
+                player2.play();
+            });
+            $('#song').bind("pause", function() {
+                console.log("Event: paused.");
+                player2.pause();
+            });
+            player2.load("{{ url_for('static', filename='play.cdg') }}?t=" + timestamp);
+
+            $('#song').on('canplay', function() {
+                    this.play();
+            });
+
+            //$('#karaoke-display').css("width", "100%");
+            $('#karaoke-display').css("width", window.innerWidth);
+            //var canvas = document.getElementById('karaoke-display');
+            //canvas.width = window.innerWidth;
+            //canvas.height = window.innerHeight;
+            
+        }
+
+    });
+    
+}
+</script>
+
+
+        <meta name="viewport" content="width=device-width" />
+
+        </head>
+        <body onload="onLoad()">
+
+            <div class="header">
+
+        {% if username %}
+            Hello {{ username }}!  Please choose a song.
+        {% else %}
+            <script>
+            username=prompt("Please enter your username:","");
+            $.post(
+                "{{ url_for('setUser') }}", 
+                {'username':username},
+                function() {location.reload()}
+            );
+            </script>
+        {% endif %}  
+            <div id="user_data"> </div>
+            <form action="javascript:query()">
+                <input type=text name=query id=search_query>
+                <input type=submit>
+            </form>
+            </div>
+            <div class="play" id="play_cdg">EMPTY</div>
+            Local Results:
+            <div class="data" id="data_loc"> </div>
+
+            Web Results:
+            <div class="data" id="data_web"> </div>
+
+        </body>
+    </div>
+</html>

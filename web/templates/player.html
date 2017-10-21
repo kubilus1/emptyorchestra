@@ -1,0 +1,22 @@
+{% if song.type == 'youtube_embed' %}
+<iframe title="{{ song.title }}" width="480" height="400"
+        src="{{ song.path }}" frameborder="0"
+        allowfullscreen></iframe>
+{% elif song.type == 'youtube' %}
+<script language="javascript" type="text/javascript">
+var awindow;
+awindow = window.open("{{ song.path }}");
+window.setTimeout('awindow.close()',4500);
+</script>
+{% elif song.type == 'cdg' %}
+  <div id="karaoke-player"></div>
+  
+  <canvas id="karaoke-display" width="600" height="432">
+  </canvas>
+  <audio id="song" controls="controls" autoplay="autoplay">
+      <source src="{{ url_for('static', filename='play.mp3') }}?t={{ song.timestamp }}" type="audio/mpeg" />
+  </audio>
+
+  <div id="cdg-debug">
+  </div>
+{% endif %}
