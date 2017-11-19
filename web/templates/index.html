@@ -18,6 +18,30 @@ function onLoad(data) {
     //checkCookie();
     //alert($(data));
    // alert("Load");
+
+
+$( ".cross" ).hide();
+$( ".menu" ).hide();
+$( ".hamburger" ).click(function() {
+    $( ".menu" ).slideToggle( "slow", function() {
+        $( ".hamburger" ).hide();
+        $( ".cross" ).show();
+    });
+});
+
+$( ".cross" ).click(function() {
+    $( ".menu" ).slideToggle( "slow", function() {
+        $( ".cross" ).hide();
+        $( ".hamburger" ).show();
+    });
+});
+
+}
+
+function openMenu(x) {
+    console.log("OpenMenu");
+    x.classList.toggle("change");
+    $(".menu").slideToggle("slow");
 }
 
 function query() {
@@ -139,6 +163,22 @@ function do_play_cdg(artist, title, path, archive) {
 
             <div class="header">
 
+                <div class="container" onclick="openMenu(this)">
+                      <div class="bar1"></div>
+                      <div class="bar2"></div>
+                      <div class="bar3"></div>
+                </div>
+                <div class="menu">
+                <ul>
+                    <a href="#"><li>LINK ONE</li></a>
+                    <a href="#"><li>LINK TWO</li></a>
+                    <a href="#"><li>LINK THREE</li></a>
+                    <a href="#"><li>LINK FOUR</li></a>
+                    <a href="#"><li>LINK FIVE</li></a>
+                </ul>
+                </div> 
+
+
         {% if username %}
             Hello {{ username }}!  Please choose a song.
         {% else %}
@@ -157,7 +197,7 @@ function do_play_cdg(artist, title, path, archive) {
                 <input type=submit>
             </form>
             </div>
-            <div class="play" id="play_cdg">EMPTY</div>
+
             Local Results:
             <div class="data" id="data_loc"> </div>
 

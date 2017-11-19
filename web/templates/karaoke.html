@@ -5,8 +5,9 @@
     <head id="head">
     <!--<link rel="stylesheet" type="text/css" href="css/widgets.css">-->
         <!--<link rel="stylesheet" type="text/css" href="css/general.css">-->
-        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/karaoke.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/simplegrid.css') }}">
+		<link href="https://fonts.googleapis.com/css?family=Luckiest+Guy" rel="stylesheet">
         <meta name="author" content="Matt Kubilus" />
         <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
         <title>Empty Orchestra</title>
@@ -15,9 +16,15 @@
         <script src="http://www.youtube.com/player_api"></script>
         <script type="text/javascript"> 
 
+function randomChoice(arr) {
+    return arr[Math.floor(arr.length * Math.random())];
+}
+
 function onLoad(data) {
     console.log("On Load...");
+    
     do_wait_song();
+
     //checkCookie();
     //alert($(data));
    // alert("Load");
@@ -44,6 +51,13 @@ function do_play_song(artist, title, path, archive) {
 
 function youtube_embed(data) {
    
+    set_stage();
+    
+    var width = window.innerWidth * 0.8;
+    var height = window.innerHeight * 0.8;
+
+    width = Math.max(1024, width);
+    height = Math.max(768, height);
 	/* 
     var html_str = '<iframe id="player" title="' + data.title + 
         '" width="'+window.innerWidth+'" height="'+window.innerHeight+
@@ -83,31 +97,53 @@ function youtube_embed(data) {
 	function stopVideo() {
 		player.stopVideo();
 		player.destroy();
-		do_wait_song();
+        song_end(data);
 	}
 	function onPlayerError(event) {
 		console.log("Error, try full player");
 		youtube_window(data);
 	}
-    $('#youtube_embed').css("height", window.innerHeight);
-    $('#youtube_embed').css("width", window.innerWidth);
+    //$('#youtube_embed').css("height", window.innerHeight);
+    //$('#youtube_embed').css("width", window.innerWidth);
+    $('#youtube_embed').css("height", height);
+    $('#youtube_embed').css("width", width);
     $('#cdg_player').hide();
     $('#youtube_embed').show();
     $('#inter').hide();
 }
 
+
+function set_stage() {
+    var stage = randomChoice(['theater1.jpeg', 'concert1.jpeg', 'concert2.jpeg', 'ampitheater1.jpeg','bar1.jpeg']);
+
+    $('body').css({background : '#111111 url(/static/images/'+stage+') no-repeat fixed center / 100% auto'});
+    $('#queue').hide();
+    $('#KJ').hide();
+}
+
 function cdg_player(data) {
+    set_stage();
     console.log(data);
+
+    var width = window.innerWidth * 0.8;
+    var height = window.innerHeight * 0.8;
+
+    width = Math.max(1024, width);
+    height = Math.max(768, height);
+
+    console.log("W: " + width + "  H: " + height);
+
     var html_str = '<div id="karaoke-player"></div>' +
-        '<canvas id="karaoke-display" width="600" height="432">' +
+        '<canvas id="karaoke-display" width="'+width+'" height="'+height+'" >' +
         '</canvas>' +
-        '<audio id="song" controls="controls" autoplay="autoplay">' +
+        '<audio id="song" autoplay="autoplay">' +
         '<source src="{{ url_for('static', filename='play.mp3') }}?t='+ 
         data.timestamp + '" type="audio/mpeg" />' +
         '</audio>'
     $('#cdg_player').html(html_str);
     
-    var player2 = new CDGPlayer(document.getElementById('karaoke-display'));
+    
+	var player2 = new CDGPlayer(document.getElementById('karaoke-display'));
     var timestamp = +new Date;
 
     $('#song').bind("playing", function() {
@@ -127,12 +163,19 @@ function cdg_player(data) {
 
     //$('#karaoke-display').css("width", "100%");
     //$('#karaoke-display').css("width", window.innerWidth);
-    $('#karaoke-display').css("height", window.innerHeight);
+    //$('#karaoke-display').css("height", window.innerHeight*0.80);
+    //$('#karaoke-display').css("width", window.innerWidth);
     //var canvas = document.getElementById('karaoke-display');
     //canvas.width = window.innerWidth;
     //canvas.height = window.innerHeight;
+    //$('#karaoke-display').css("height", 768);
+    //$('#karaoke-display').css("width", width);
+    //$('#karaoke-player').css("width", width);
+    //$('#cdg_player').css("width", width);
+
     $('#song').on('ended', function() {
-        do_wait_song();
+        $('#karaoke-display').hide();
+        song_end(data);
     });
 
     $('#cdg_player').show();
@@ -140,12 +183,34 @@ function cdg_player(data) {
     $('#inter').hide();
 }
 
+
+function song_end(data) {
+    $('#cdg_player').hide();
+    $('#youtube_embed').hide();
+    $('#KJ').show();
+    //$('body').css({background : '#111111 url(/static/images/next1.jpeg) no-repeat fixed center / auto 100%'});
+        
+    var html_str = '<audio id="song" autoplay="autoplay">' +
+        '<source src="{{ url_for('static', filename='applause.mp3') }}?t='+ 
+        data.timestamp + '" type="audio/mpeg" />' +
+        '</audio>'
+
+    $('#player').html(html_str);
+
+    $('#song').on('canplay', function() {
+            this.play();
+    });
+
+    $('#KJ').html("<h3>Let's here it for "+data.username+"!</h3>");
+    setTimeout(function() {do_wait_song();}, 5000);
+}
+
 function youtube_window(data) {
     console.log("Start youtube window"); 
     console.log(data);
     var awindow;
     awindow = window.open('http://www.youtube.com/watch?v='+data.path);
-    setTimeout(function() { console.log("Closing youtube."); awindow.close(); do_wait_song();}, data.duration);
+    setTimeout(function() { console.log("Closing youtube."); awindow.close(); song_end(data);}, data.duration);
 
     $('#cdg_player').hide();
     $('#youtube_embed').hide();
@@ -153,13 +218,18 @@ function youtube_window(data) {
 }
 
 function do_wait_song() {
+    $('body').css({background : '#111111 url(/static/images/next1.jpeg) no-repeat fixed center / auto 100%'});
+    $('#KJ').show();
+    
     $.ajax({
         type: "GET",
         url: "{{ url_for('show_next') }}",
         async: true,
         success: function(data) {
+            console.log("Show next:");
             console.log(data);
-            $('#inter').html("DATA:" + data);
+            $('#queue').html(data);
+            $('#queue').show();
         }
     });
 
@@ -169,17 +239,30 @@ function do_wait_song() {
         async: true,
         success: function(data) {
             //$('#play_cdg').html(data);
-            console.log("Play song success: " + data);
+            if (data != null) {
+                var bground = randomChoice(['next2.jpeg','microphone1.jpeg','microphone2.jpeg']);
+                $('body').css({background : '#111111 url(/static/images/'+bground+') no-repeat fixed center / auto 100%'});
+                $('#KJ').html("<h3>"+data.username+", step on UP!</h3>");
+            } else {
+                $('#KJ').html("<h2>Soooo, who's next?</h2>");
+                setTimeout(function() {do_wait_song();}, 5000);
+                return;
+            }
+            
+            console.log("Play song success: ");
+            console.log(data);
+
             if (data.type == 'youtube_embed') {
-                setTimeout(function() {youtube_embed(data);}, 5000);
+                setTimeout(function() {youtube_embed(data);}, 10000);
             } else if (data.type == 'youtube') {
-                setTimeout(function() {youtube_window(data);}, 5000);
+                setTimeout(function() {youtube_window(data);}, 10000);
             } else if (data.type == 'cdg' ){
-                setTimeout(function() {cdg_player(data);}, 5000);
+                setTimeout(function() {cdg_player(data);}, 10000);
             } else if (data.type == 'cdgzip' ){
-                setTimeout(function() {cdg_player(data);}, 5000);
+                setTimeout(function() {cdg_player(data);}, 10000);
             } else {
                 console.log("Not recognized format: " + data.type);
+                setTimeout(function() {do_wait_song();}, 5000);
             }
         },
       complete: function() {
@@ -190,7 +273,6 @@ function do_wait_song() {
 
     $('#cdg_player').hide();
     $('#youtube_embed').hide();
-    $('#inter').show();
 }
 
 </script>
@@ -199,18 +281,19 @@ function do_wait_song() {
         <meta name="viewport" content="width=device-width" />
 
         </head>
-        <body onload="onLoad()">
-            <div id="queue">
+        <body onload="onLoad()" class="hcenter">
+
+            <div id="KJ" class="centerish">
+            </div>
+            <br>
+            <br>
+            <div id="queue" >
             </div>
             
             <div id="cdg_player">
             </div>
 
-            <div id="youtube_embed">
-            </div>
-			<div id="player"> </div>
-            <div id="inter">
-                <img src="{{ url_for('static', filename='bground.jpg') }}" />
+            <div id="youtube_embed" class="centered">
             </div>
 
         </body>

@@ -1,7 +1,11 @@
-<h3>Who's next....<h3>
+{% if queue|length > 0 %}
+<h3> 
+On deck:
 
 <ol>
     {% for item in queue %}
     <li> {{ item.username }} - {{ item.title }} </li>
     {% endfor %}
 </ol>
+</h3>
+{% endif %}
