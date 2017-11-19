@@ -3,21 +3,56 @@
 from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify
 app = Flask(__name__)
 
+import re
 import os
+import stat
 import glob
 import json
 import time
 import shutil
 import urllib
 import urllib2
+import collections
 import Queue
 from datetime import datetime
 import socket
-from zeroconf import ServiceInfo, Zeroconf
 import zipfile
+import webbrowser
+import id3reader
+import pprint
+import threading
 
-song_q = None
+from tinydb import TinyDB, Query
+
+from tinydb.storages import JSONStorage, MemoryStorage
+from tinydb.middlewares import CachingMiddleware
+
+
+song_qs = None
 songs = None
+singer_index = None
+db = None
+song_lock = threading.RLock()
+RUNNING = True
+
+
+def fix_utf8(instr):
+    try:
+        return instr.decode('utf-8','ignore').encode('utf-8')
+    except UnicodeEncodeError:
+        print "Could not fix (%s)" % instr
+        return instr
+
+class EoDB(object):
+
+    cache = {}
+
+    def __init__(self, dbname):
+        self.db = TinyDB(dbname)
+        #self.db = TinyDB(dbname, storage=CachingMiddleware(JSONStorage))        
+        #self.db = TinyDB(storage=MemoryStorage)
+    def close(self):
+        self.db.close()
 
 
 def do_url(url):
@@ -42,25 +77,43 @@ def setUser():
     print "POST:", username
     #return render_template('index.html', username=username)
     resp = make_response(render_template('index.html'))
-    resp.set_cookie('eoname', username, max_age=300)
+    #resp.set_cookie('eoname', username, max_age=300)
+    resp.set_cookie('eoname', username)
     return resp
     #return redirect(url_for('index'))
+
+
+def search_func(val, term):
+    if term.lower() in val.lower():
+        return True
+    else:
+        return False
 
 @app.route('/search_local/')
 @app.route('/search_local/<term>')
 def search_local(term=None):
-    global songs
+    #global songs
 
     if not term:
         print "REQUEST:", request.args
         term = request.args.get('term', "")
     print "SEARCH TERM:", term
 
-    karaokes = [ k for k in songs if term.lower() in k.get('title').lower() ]
+    global db
+    songs_table = db.db.table('songs')
+
+    terms = term.split()
+
+    karaokes = songs_table.search(
+        (Query().artist.test(search_func, term)) |
+        (Query().title.test(search_func, term))
+    )
+
+    #karaokes = [ k for k in songs if term.lower() in k.get('title').lower() or term.lower() in k.get('artist').lower() ]
     
     print "FOUND:", karaokes
 
-    return render_template('local_results.html', items=karaokes)
+    return render_template('local_results.html', items=karaokes[:50])
 
 
 @app.route('/search_web/')
@@ -89,18 +142,18 @@ def search_web(term=None):
 
         if vidid:
             karaokes.append({
-                'title':title,
+                'title':title.replace('"',"'"),
                 'vidurl':vidurl,
                 'vidid':vidid,
                 'imgurl':imgurl
                 })
 
-    return render_template('web_results.html', items=karaokes)
+    return render_template('web_results.html', items=karaokes[:50])
 
 
 @app.route('/save_song/')
 def save_song():
-    global song_q
+    global song_qs
 
     artist = request.args.get('artist')
     title = request.args.get('title')
@@ -148,13 +201,14 @@ def save_song():
         "timestamp":time.time()
     }
 
-    song_q.put(song_data)
+    song_qs.setdefault(username, Queue.Queue()).put(song_data)
     return jsonify({'status':'ok'})
 
 @app.route('/show_next/')
 def show_next():
-    global song_q
-    q = list(song_q.queue)
+    global song_qs
+    #q = list(song_q.queue)
+    q = []
     print "Q:", q
     #return jsonify(q)
     return render_template("queue.html", queue=q) 
@@ -166,9 +220,29 @@ def karaoke():
 
 @app.route('/wait_song/')
 def wait_song():
-    print "Waiting for song requests..."
-    global song_q
-    song_data = song_q.get()
+    global song_qs
+    global singer_index
+
+    print "Waiting for song request %s" % singer_index
+
+    q_len = len(song_qs)
+   
+    singer_queue = Queue.Queue()
+    for i in xrange(q_len):
+        if singer_index >= q_len:
+            singer_index = 0
+
+        singer_queue = song_qs.values()[singer_index]
+        singer_index += 1
+
+        if not singer_queue.empty():
+            break
+
+    try:
+        song_data = singer_queue.get(timeout=1)
+    except Queue.Empty:
+        print "No data yet..."
+        return jsonify(None)
 
     print "Preparing to play:", song_data
 
@@ -194,8 +268,8 @@ def wait_song():
 
         filename = os.path.splitext(path)[0]
         print "FILENAME:", filename
-        shutil.copy("%s.cdg" % filename, "static/play.cdg") 
-        shutil.copy("%s.mp3" % filename, "static/play.mp3") 
+        shutil.move("%s.cdg" % filename, "static/play.cdg") 
+        shutil.move("%s.mp3" % filename, "static/play.mp3") 
         song_data['path'] = url_for('static', filename='play.cdg')
         song_data['audio'] = url_for('static', filename='play.mp3')
 
@@ -217,7 +291,6 @@ def play_song():
     print "ARCHIVE TYPE:", archive
     print "PATH:", path
     print "TITLE:", title
-
 
     if archive == 'youtube':
         play_type = 'youtube'
@@ -257,24 +330,94 @@ def play_song():
     print "VIDURL:", path
     return render_template('karaoke.html', song=song_data)
 
+SONGID_RE = re.compile('(.* - )?(?P<artist>.*) ?- ?(?P<title>.*)\..+')
+def identify_song(filepath):
+    artist = None
+    title = None
+
+    if os.path.isfile(filepath):
+        id3r = id3reader.Reader(filepath)
+        artist = id3r.getValue('performer')
+        title = id3r.getValue('title')
+    
+    songfile = os.path.basename(filepath)
+    if not artist:
+        #m = re.match('(.* - )?(?P<artist>.*) ?- ?(?P<title>.*)\..+', songfile)
+        m = SONGID_RE.match(songfile)
+        if m:
+            songdict = m.groupdict()
+            artist = songdict.get('artist')
+            title = songdict.get('title')
+
+    if not artist or not title:
+        print "-----"
+        print "Failed for:"
+        print filepath
+        print artist
+        print title
+
+    if not title:
+        f, e = os.path.splitext(songfile)
+        title = f
+    if not artist:
+        artist = ''
+
+    return (artist, title)
+
 
 def findKaraokes(kpath):
-    karaokes = []
+
+    global db
+
+    songs_table = db.db.table('songs')
+    conf_table = db.db.table('conf')
+    
+    result = conf_table.get(Query().key == 'mtime')
+    if not result:
+        last_scantime = 0
+    else:
+        last_scantime = result.get('value')
+
     print "KARAOKE_PATH:", kpath
     print "Finding karaokes..."
     for root, dirs, files in os.walk(kpath):
+
+        if not RUNNING:
+            break
+
+        cur_mtime = os.stat(root)[stat.ST_MTIME]
+        if cur_mtime <= last_scantime:
+            print "Nothing changed for %s" % root
+            continue
+
+        print "%s changed, scanning" % root
+
+        karaokes = []
         for f in files:
             filename, ext = os.path.splitext(f)
             if ext.lower() in ['.cdg']:
-                artist = os.path.basename(root)
-                title = f
+
+                songfile = os.path.join(root, "%s.mp3" % filename)
+                if not os.path.isfile(songfile):
+                    print "%s does not exist, skipping" % songfile
+                    continue
+                #artist = os.path.basename(root)
+                #title = f
+                artist, title = identify_song(
+                    songfile
+                )
+
                 path = os.path.join(root, f)
-                karaokes.append({
-                    'artist':artist,
-                    'title':title,
+
+                asong = {
+                    'artist':fix_utf8(artist),
+                    'title':fix_utf8(title),
                     'path':path,
-                    'archive':''
-                })
+                    'archive':'',
+                    'type': 'cdg_mp3',
+                    'directory': root
+                }
+                karaokes.append(asong)
             elif ext.lower() in ['.zip']:
                 zippath = os.path.join(root, f)
                 #print "Checking:", zippath
@@ -286,42 +429,97 @@ def findKaraokes(kpath):
                     continue
                 for f in ziplist:
                     filename, ext = os.path.splitext(f)
+                    artist, title = identify_song(
+                        f
+                    )
                     if ext.lower() in ['.cdg']:
-                        artist = os.path.basename(root)
-                        print "Zip found:", zippath, f
-                        karaokes.append({
-                            'artist':artist,
-                            'title':f,
+                        #artist = os.path.basename(root)
+                        #print "Zip found:", zippath, f
+                        asong = {
+                            'artist':fix_utf8(artist),
+                            'title':title,
                             'path':f,
-                            'archive':zippath
-                        })
+                            'archive':zippath,
+                            'type': 'zip_mp3',
+                            'directory': root
+                        }
+                    karaokes.append(asong)
+        with song_lock:
+            # Clear the directory for re-scanning
+            songs_table.remove(Query().directory == root)
+            print "Inserting: %s" % len(karaokes)
+            try:
+                songs_table.insert_multiple(karaokes)
+            except OverflowError:
+                print "Error with: "
+                print pprint.pprint(karaokes)
+                for k in karaokes:
+                    print "Trying: (%s)" % k
+                    songs_table.insert(k)
+                #return 
 
-    print "FOUND:", len(karaokes)
-    return karaokes
+    with song_lock:
+        conf_table.upsert(
+            {"key":"mtime","value":time.time()},
+            Query().key == "mtime"
+        )
+    print "FOUND:", len(songs_table)
+
+    fix_songdb()
+
+def imatch(val, term):
+    if term.lower() == val.lower():
+        return True
+    else:
+        return False
+
+
+def fix_songdb():
+    global db
+
+    song_table = db.db.table('songs')
+    
+    artists = set(x.get('artist').lower() for x in song_table.all())
+    titles = set(x.get('title').lower() for x in song_table.all())
+    
+    intersect = artists & titles
+
+    for artist in intersect:
+        print "ARTIST:", artist
+        songs = song_table.search(Query().title.test(imatch, artist))
+        print "Need to update:", songs
+
 
 if __name__ == "__main__":
-    global song_q
+    global song_qs
+    global singer_index 
     global songs
-    song_q = Queue.Queue()
-    #app.run(host="0.0.0.0")
+    global db
 
-    #songs = findKaraokes('/home/mkubilus/karaoke')
-    songs = findKaraokes('/media/nas/karaoke')
+    db = EoDB('eo.tdb')
+    conf_table = db.db.table('conf')
 
-    desc = {"path":"."}
-
-    info = ServiceInfo(
-        "_http._tcp.local.",
-        "atest._http._tcp.local.",
-        socket.inet_aton("0.0.0.0"),
-        5000, 0, 0,
-        desc, "ash-2.local."
+    kpath = "/media/nas/karaoke"
+    scan_t = threading.Thread(
+        target=findKaraokes,
+        args=(kpath,)
     )
 
-    zeroconf = Zeroconf()
-    print "Starting zeroconf..."
-    zeroconf.register_service(info)
-    print "Starting flask..."
+    scan_t.start()
 
-    app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
+    singer_index = 0
+    song_qs = collections.OrderedDict()
+    #app.run(host="0.0.0.0")
 
+    #kpath = "/home/mkubilus/karaoke"
+    #songs = findKaraokes(kpath)
+
+    try:
+        app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
+    except KeyboardInterrupt:
+        print "Exiting"
+    finally:
+        global RUNNING
+        RUNNING = False
+        scan_t.join(30)
+        db.close()
