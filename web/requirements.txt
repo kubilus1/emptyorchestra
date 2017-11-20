@@ -1,2 +1,3 @@
 tinydb >= 3.7
-ujson
+#ujson
+Flask >= 0.12
