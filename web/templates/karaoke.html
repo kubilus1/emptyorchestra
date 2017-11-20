@@ -142,7 +142,6 @@ function cdg_player(data) {
         '</audio>'
     $('#cdg_player').html(html_str);
     
-    
 	var player2 = new CDGPlayer(document.getElementById('karaoke-display'));
     var timestamp = +new Date;
 
@@ -189,15 +188,15 @@ function song_end(data) {
     $('#youtube_embed').hide();
     $('#KJ').show();
     //$('body').css({background : '#111111 url(/static/images/next1.jpeg) no-repeat fixed center / auto 100%'});
-        
+    console.log("Song_End");    
     var html_str = '<audio id="song" autoplay="autoplay">' +
-        '<source src="{{ url_for('static', filename='applause.mp3') }}?t='+ 
-        data.timestamp + '" type="audio/mpeg" />' +
+        '<source src="{{ url_for('static', filename='applause.mp3') }}" type="audio/mpeg" />' +
         '</audio>'
 
     $('#player').html(html_str);
 
     $('#song').on('canplay', function() {
+            console.log('Playing applause....');
             this.play();
     });
 
@@ -268,7 +267,6 @@ function do_wait_song() {
       complete: function() {
           console.log("COMPLETE");
       }
-
     });
 
     $('#cdg_player').hide();
@@ -291,6 +289,9 @@ function do_wait_song() {
             </div>
             
             <div id="cdg_player">
+            </div>
+
+            <div id="player">
             </div>
 
             <div id="youtube_embed" class="centered">
