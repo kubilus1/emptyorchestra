@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<div id="whole">
+    <head id="head">
+        {% block head %}
+    <!--<link rel="stylesheet" type="text/css" href="css/widgets.css">-->
+        <!--<link rel="stylesheet" type="text/css" href="css/general.css">-->
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/layout.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/simplegrid.css') }}">
+        <meta name="author" content="Matt Kubilus" />
+        <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+        <title>Empty Orchestra</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script src="{{ url_for('static', filename='js/wcdg.js') }}"></script>
+        <script type="text/javascript"> 
+
+function onLoad(data) {
+    //checkCookie();
+    //alert($(data));
+   // alert("Load");
+    {% block onload %}
+    {% endblock %}
+
+
+$( ".cross" ).hide();
+$( ".menu" ).hide();
+$( ".hamburger" ).click(function() {
+    $( ".menu" ).slideToggle( "slow", function() {
+        $( ".hamburger" ).hide();
+        $( ".cross" ).show();
+    });
+});
+
+$( ".cross" ).click(function() {
+    $( ".menu" ).slideToggle( "slow", function() {
+        $( ".cross" ).hide();
+        $( ".hamburger" ).show();
+    });
+});
+
+}
+
+function openMenu(x) {
+    console.log("OpenMenu");
+    x.classList.toggle("change");
+    $(".menu").slideToggle("slow");
+}
+
+</script>
+
+
+        <meta name="viewport" content="width=device-width" />
+
+        {% endblock %}
+        </head>
+
+        <body onload="onLoad()">
+            <div class="header">
+                {% block menu %}
+
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<body>
+
+<div class="w3-sidebar w3-bar-block w3-card w3-collapse w3-animate-left" style="width:300px;" id="leftMenu">
+  <button onclick="closeLeftMenu()" class="w3-bar-item w3-button w3-large">Close &times;</button>
+  {% block sidebar %}
+  <div id=sidebar>
+  </div>
+  {% endblock %}
+</div>
+
+
+<div class="w3-sidebar w3-bar-block w3-card w3-animate-right" style="display:none;right:0;" id="rightMenu">
+  <button onclick="closeRightMenu()" class="w3-bar-item w3-button w3-large">&times;</button>
+	<a href="{{ url_for('index') }}"><li>Home</li></a>
+	<a href="{{ url_for('profile') }}"><li>Profile</li></a>
+	<a href="{{ url_for('logout') }}"><li>Logout</li></a>
+</div>
+
+<div class="w3-main" style="margin-left:300px">
+
+<div class="w3-teal">
+  <button class="w3-button w3-teal w3-xlarge w3-left" onclick="openLeftMenu()">&#9776;</button>
+				{% if session['access_token'] %}
+  <button class="w3-button w3-teal w3-xlarge w3-right" onclick="openRightMenu()">
+                <img class="avatar" src="{{ session['picture'] }}"></img></button>
+				{% else %}
+                <a class="w3-teal w3-right" href="{{ url_for('logout') }}">Logout</a>
+                <!--
+                <button class="w3-teal w3-right w3-button" onclick="document.getElementById('id01').style.display='block'" style="width:auto;">Login</button>-->
+				{% endif %}
+  <div class="w3-container">
+  </div>
+</div>
+     
+
+<!--
+                <div class="container" onclick="openMenu(this)">
+                      <div class="bar1"></div>
+                      <div class="bar2"></div>
+                      <div class="bar3"></div>
+                </div>
+                <div class="menu">
+                <ul>
+                    <a href="{{ url_for('index') }}"><li>Home</li></a>
+                    <a href="{{ url_for('profile') }}"><li>Profile</li></a>
+                    <a href="{{ url_for('logout') }}"><li>Logout</li></a>
+                </ul>
+                </div> 
+-->
+
+<!--
+				<div id="id01" class="modal">
+					<div class="modal-content animate prompt">
+						<center>
+						<a href="{{ url_for('glogin') }}">Login with Google</a>
+						<br>
+						<a href="{{ url_for('glogin') }}">Login with Facebook</a>
+						</center>
+					</div>
+				</div>
+-->
+
+                {% endblock %}
+            </div>
+
+            <div id="content" class="w3-main" style="margin-left:300px; margin-top:60px;">
+                {% block content %}
+                {% endblock %}
+            </div>
+            
+</div>
+            <div id="footer">
+                {% block footer %}
+                {% endblock %}
+            </div>
+
+<script>
+function openLeftMenu() {
+    document.getElementById("leftMenu").style.display = "block";
+}
+function closeLeftMenu() {
+    document.getElementById("leftMenu").style.display = "none";
+}
+
+function openRightMenu() {
+    document.getElementById("rightMenu").style.display = "block";
+}
+function closeRightMenu() {
+    document.getElementById("rightMenu").style.display = "none";
+}
+// Get the modal
+var modal = document.getElementById('id01');
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+        </body>
+    </div>
+</html>

@@ -21,19 +21,39 @@ import webbrowser
 import id3reader
 import pprint
 import threading
+import yaml
 
+from gtts import gTTS
 from tinydb import TinyDB, Query
 
 from tinydb.storages import JSONStorage, MemoryStorage
 from tinydb.middlewares import CachingMiddleware
 
+import youtube
+import webview
 
+control_id = None
+retry_song = False
+last_song = None
 song_qs = None
 songs = None
 singer_index = None
 db = None
+conf = None 
 song_lock = threading.RLock()
 RUNNING = True
+
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
 
 
 def fix_utf8(instr):
@@ -54,7 +74,6 @@ class EoDB(object):
     def close(self):
         self.db.close()
 
-
 def do_url(url):
     print "URL:", url
     resp = urllib2.urlopen(url)
@@ -62,13 +81,44 @@ def do_url(url):
     data = resp.read()
     return data
 
+def search_func(val, term):
+    if term.lower() in val.lower():
+        return True
+    else:
+        return False
+
 @app.route('/')
 def index():    
     print "READY!"
     username = request.cookies.get('eoname')
     print "USERNAME:", username
-    return render_template('index.html', username=username)
+    #return render_template('index.html', username=username)
+    return render_template('sing.html', username=username)
 
+@app.route('/get_singer')
+def get_singer():
+    print("/get_singer")
+    global song_qs
+    username = request.cookies.get('eoname')
+    songs = song_qs.get(username, [])
+    
+    print("Songs: %s" % songs)
+
+    return render_template(
+        "singerdata.html",
+        queued=songs,
+        completed=[],
+        recommended=[]
+    )
+
+@app.route('/sayit')
+def sayit():
+    message = request.args.get('message')
+
+    message = re.sub(r'[^a-zA-Z0-9 .!,]+', ' ', message)
+    tts = gTTS(text=message, lang='en', slow=False)
+    tts.save('./static/sayit.mp3')
+    return jsonify({"ret":"okay"})
 
 @app.route('/set_user', methods=['POST'])
 def setUser():
@@ -76,18 +126,12 @@ def setUser():
     username = request.form.get('username')
     print "POST:", username
     #return render_template('index.html', username=username)
-    resp = make_response(render_template('index.html'))
+    resp = make_response(render_template('sing.html', username=username))
     #resp.set_cookie('eoname', username, max_age=300)
     resp.set_cookie('eoname', username)
     return resp
     #return redirect(url_for('index'))
 
-
-def search_func(val, term):
-    if term.lower() in val.lower():
-        return True
-    else:
-        return False
 
 @app.route('/search_local/')
 @app.route('/search_local/<term>')
@@ -122,60 +166,117 @@ def search_web(term=None):
     if not term:
         #print "REQUEST:", request.args
         term = request.args.get('term', "")
-    print "SEARCH TERM:", term
-    youtube_url = "https://www.googleapis.com/youtube/v3/search?key=AIzaSyBFEImhV_RouzOZRvHw1iwenzi-ecr8Bxk&part=snippet&q=%si&maxResults=25" % urllib.quote("karaoke %s" % term)
-    json_data = do_url(youtube_url)
-    data = json.loads(json_data)
-    #print "DATA:", data 
 
-    karaokes = []
+    yts = youtube.yt_scrape()
 
-    for item in data.get('items'):
-        snippet = item.get('snippet',{})
-        #title = urllib.quote(snippet.get('title',""))
-        title = snippet.get('title',"")
-        #vidid = urllib.quote(item.get('id',{}).get('videoId',""))
-        vidid = item.get('id',{}).get('videoId',"")
-        imgurl = snippet.get('thumbnails',{}).get('default',{}).get('url')
-        #vidurl = 'http://www.youtube.com/watch?v=%s' % vidid
-        vidurl = 'http://www.youtube.com/embed/%s?autoplay=1' % vidid
-
-        if vidid:
-            karaokes.append({
-                'title':title.replace('"',"'"),
-                'vidurl':vidurl,
-                'vidid':vidid,
-                'imgurl':imgurl
-                })
+    karaokes = yts.search(term)
 
     return render_template('web_results.html', items=karaokes[:50])
 
 
-@app.route('/save_song/')
-def save_song():
+def get_vid_duration(timestamp):
+    for fmt in ('PT%MM%SS', 'PT%MM'):
+        try:
+            dateval = datetime.strptime(timestamp, fmt)
+            duration = int((dateval - datetime(1900, 1, 1)).total_seconds() * 1000) + 5000
+            return duration
+        except ValueError:
+            pass
+    raise ValueError('no valid date format found')
+
+@app.route('/unqueue_song/')
+def unqueue_song():
     global song_qs
+    path = request.args.get('path')
+    idx = request.args.get('idx')
+    username = request.cookies.get('eoname')
+
+    songs = song_qs.get(username, [])
+
+    new_songs = [
+        song for song in songs if song.get('path') != path
+    ]
+
+    song_qs[username] = new_songs
+
+    return '{"ret":"ok"}'
+
+@app.route('/queue_up/')
+def queue_up():
+    global song_qs
+    idx = int(request.args.get('idx'))
+    username = request.cookies.get('eoname')
+
+    songs = song_qs.get(username, [])
+
+    if idx > 0:
+        songs.insert(idx-1, songs.pop(idx))
+
+    return '{"ret":"ok"}'
+
+@app.route('/queue_down/')
+def queue_down():
+    global song_qs
+    idx = int(request.args.get('idx'))
+    username = request.cookies.get('eoname')
+
+    songs = song_qs.get(username, [])
+    songs.insert(idx+1, songs.pop(idx))
+
+    return '{"ret":"ok"}'
+
+
+@app.route('/profile/')
+def profile():
+    return '{"ret":"ok"}'
+
+@app.route('/glogin/')
+def glogin():
+    return '{"ret":"ok"}'
+
+@app.route('/logout/')
+def logout():
+    #resp = make_response(render_template('sing.html'))
+    resp = make_response(redirect(url_for('index')))
+    #resp.set_cookie('eoname', username, max_age=300)
+    resp.set_cookie('eoname', '', expires=0)
+    return resp
+
+
+@app.route('/queue_song/')
+#@app.route('/save_song/')
+#def save_song():
+def queue_song():
+    global song_qs
+    global conf
 
     artist = request.args.get('artist')
     title = request.args.get('title')
     path = request.args.get('path')
     archive = request.args.get('archive')
     audio = ""
-    duration = 0
+    duration = 600000
 
     username = request.cookies.get('eoname')
     print "Saving ", artist, title, path, archive, username
 
     if archive == 'youtube':
         audio = ""
-        status_url = "https://www.googleapis.com/youtube/v3/videos?id=%s&key=AIzaSyBFEImhV_RouzOZRvHw1iwenzi-ecr8Bxk&part=status,contentDetails" % path
-        json_data = do_url(status_url)
-        data = json.loads(json_data)
-        print data
-        embed = data.get('items',[{}])[0].get('status',{}).get('embeddable')
-        vid_len = data.get('items',[{}])[0].get('contentDetails',{}).get('duration', '')
-        print "EMBED:", embed
-        print "VIDLEN", vid_len
-        duration = int((datetime.strptime(vid_len, 'PT%MM%SS') - datetime(1900, 1, 1)).total_seconds() * 1000) + 5000
+        status_url = "https://www.googleapis.com/youtube/v3/videos?id=%s&key=%s&part=status,contentDetails" % (path, conf.get('YOUTUBE_API_KEY'))
+        embed = False
+        duration = 600000
+        try:
+            json_data = do_url(status_url)
+            data = json.loads(json_data)
+            print data
+            embed = data.get('items',[{}])[0].get('status',{}).get('embeddable')
+            vid_len = data.get('items',[{}])[0].get('contentDetails',{}).get('duration', '')
+            print "EMBED:", embed
+            print "VIDLEN", vid_len
+            duration = get_vid_duration(vid_len) + 5000
+        except:
+            print("Youtube is being a jerk again.")
+
         if embed:
             play_type = 'youtube_embed'
             #path = 'http://www.youtube.com/embed/%s?autoplay=1' % path
@@ -201,33 +302,42 @@ def save_song():
         "timestamp":time.time()
     }
 
-    song_qs.setdefault(username, Queue.Queue()).put(song_data)
+    song_qs.setdefault(username, []).append(song_data)
     return jsonify({'status':'ok'})
 
 @app.route('/show_next/')
 def show_next():
     global song_qs
     #q = list(song_q.queue)
-    q = []
-    print "Q:", q
+    #q = []
+    print "Qs:", song_qs
     #return jsonify(q)
-    return render_template("queue.html", queue=q) 
+    return render_template("queue.html", queue={}) 
 
 @app.route('/karaoke/')
 def karaoke():
     #song_data = song_q.get()
-    return render_template('karaoke.html')
+    IP = get_ip()
+    tracks = os.listdir('./static/tracks')
+    print(str(tracks))
+    print("My ip: %s" % IP)
+    return render_template('karaoke.html', ip=IP, bumper_songs=str(tracks))
 
 @app.route('/wait_song/')
 def wait_song():
     global song_qs
+    global last_song
+    global retry_song
     global singer_index
 
     print "Waiting for song request %s" % singer_index
 
+    if retry_song:
+        retry_song = False
+        return jsonify(last_song)
+
     q_len = len(song_qs)
-   
-    singer_queue = Queue.Queue()
+    singer_queue = []
     for i in xrange(q_len):
         if singer_index >= q_len:
             singer_index = 0
@@ -235,12 +345,12 @@ def wait_song():
         singer_queue = song_qs.values()[singer_index]
         singer_index += 1
 
-        if not singer_queue.empty():
+        if len(singer_queue) > 0:
             break
 
     try:
-        song_data = singer_queue.get(timeout=1)
-    except Queue.Empty:
+        song_data = singer_queue.pop(0)
+    except IndexError:
         print "No data yet..."
         return jsonify(None)
 
@@ -250,7 +360,7 @@ def wait_song():
 
     if play_type == 'cdg':
         path = song_data.get('path')
-        
+        print song_data
         filename = os.path.splitext(path)[0]
         print "FILENAME:", filename
         shutil.copy("%s.cdg" % filename, "static/play.cdg") 
@@ -273,11 +383,68 @@ def wait_song():
         song_data['path'] = url_for('static', filename='play.cdg')
         song_data['audio'] = url_for('static', filename='play.mp3')
 
-
-
     print "Got a song request! :", song_data
     #return render_template('player.html', song=song_data)
+    last_song = song_data
     return jsonify(song_data)
+
+@app.route('/control')
+def control():
+    return render_template('control.html')
+
+@app.route('/skip_song')
+def skip_song():
+    webview.load_url("http://127.0.0.1:5000/karaoke")
+    return jsonify({"ret":"ok"})
+
+@app.route('/restart_song')
+def restart_song():
+    global retry_song
+    global last_song
+    retry_song = True
+    webview.load_url("http://127.0.0.1:5000/karaoke")
+    return jsonify({"ret":"ok"})
+
+@app.route('/play_youtube')
+def play_youtube():
+    song_data = json.loads(request.args.get('song_data',"{}"))
+    print("Received: %s" % song_data)
+    youtube_url = "http://www.youtube.com/watch?v=%s" % song_data.get('path')
+    sleep_seconds = (int(song_data.get('duration')/1000))
+    print("About to play: %s" % youtube_url)
+    webview.load_url(youtube_url)
+    print("Will wait for %s ..." % sleep_seconds)
+    time.sleep(sleep_seconds)
+    webview.load_url("http://127.0.0.1:5000/karaoke")
+    return jsonify({"ret":"ok"})
+
+
+@app.route('/add_song')
+def add_song():
+    global db
+    songs_table = db.db.table('songs')
+
+    artist = request.args.get('artist')
+    title = request.args.get('title')
+    path = request.args.get('path')
+    archive = request.args.get('archive')
+   
+    print "Adding: %s | %s | %s" % (
+        artist,
+        title,
+        path
+    )
+    asong = {
+        'artist':fix_utf8(artist),
+        'title':fix_utf8(title),
+        'path':path,
+        'archive':'',
+        'type': 'cdg_mp3',
+        'directory': ''
+    }
+
+    songs_table.insert(asong)
+    return jsonify({"result":"ok"})
 
 
 @app.route('/play_song/')
@@ -465,10 +632,11 @@ def findKaraokes(kpath):
         )
     print "FOUND:", len(songs_table)
 
-    fix_songdb()
+    #fix_songdb()
+
 
 def imatch(val, term):
-    if term.lower() == val.lower():
+    if term.lower() in val.lower():
         return True
     else:
         return False
@@ -486,40 +654,92 @@ def fix_songdb():
 
     for artist in intersect:
         print "ARTIST:", artist
-        songs = song_table.search(Query().title.test(imatch, artist))
+        songs = song_table.search(Query().title.test(search_func, artist))
         print "Need to update:", songs
 
 
+def run_it():
+    global control_id
+    control_id = webview.create_window(
+        "ControlPanel", 
+        "http://127.0.0.1:5000/control",
+        width=800,
+        height=300
+    )
+    app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
+
+@app.route('/find_songs/')
+def get_folder():
+    kfolder = webview.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
+            allow_multiple=False, file_types=())
+
+    findKaraokes(kfolder[0])
+    return json.dumps({"ret":"ok"})
+
+def check_health():
+    global RUNNING
+
+    while RUNNING:
+        if not webview.window_exists(uid='master'):
+            RUNNING=False
+
+    print("Main window no longer running.")
+    webview.destroy_window(uid=control_id)
+    
 if __name__ == "__main__":
     global song_qs
     global singer_index 
     global songs
     global db
+    global conf
+
+    with open('eo_conf.yml') as h:
+        conf = yaml.load(h)
+
 
     db = EoDB('eo.tdb')
     conf_table = db.db.table('conf')
 
-    kpath = "/media/nas/karaoke"
-    scan_t = threading.Thread(
-        target=findKaraokes,
-        args=(kpath,)
-    )
+    #kpath = "/media/nas/karaoke"
+    #scan_t = threading.Thread(
+    #    target=findKaraokes,
+    #    args=(kpath,)
+    #)
 
-    scan_t.start()
+    #scan_t.start()
 
     singer_index = 0
     song_qs = collections.OrderedDict()
     #app.run(host="0.0.0.0")
 
     #kpath = "/home/mkubilus/karaoke"
+    #kpath = "/media/nas/karaoke"
     #songs = findKaraokes(kpath)
 
+    t = threading.Thread(target=run_it)
+    t.daemon = True
+    t.start()
+
+    health_t = threading.Thread(target=check_health)
+    health_t.daemon = True
+    health_t.start()
+
+    #t2 = threading.Thread(target=get_folder)
+    #t2.start()
     try:
-        app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
+        webview.create_window(
+            "EmptyOrchestra", 
+            "http://127.0.0.1:5000/karaoke",
+            width=1024,
+            height=768,
+            debug=True
+        )
+        print("Main window exited.")
     except KeyboardInterrupt:
         print "Exiting"
     finally:
         global RUNNING
         RUNNING = False
-        scan_t.join(30)
+        webview.destroy_window(uid=control_id)
+        #scan_t.join(30)
         db.close()

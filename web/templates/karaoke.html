@@ -7,14 +7,67 @@
         <!--<link rel="stylesheet" type="text/css" href="css/general.css">-->
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/karaoke.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/simplegrid.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/player.css') }}">
 		<link href="https://fonts.googleapis.com/css?family=Luckiest+Guy" rel="stylesheet">
         <meta name="author" content="Matt Kubilus" />
         <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
         <title>Empty Orchestra</title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
         <script src="{{ url_for('static', filename='js/wcdg.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/id3v2.js') }}"></script>
         <script src="http://www.youtube.com/player_api"></script>
         <script type="text/javascript"> 
+
+function say(m) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('sayit') }}",
+        data: {
+            'message':m
+        },
+        async: false
+    });
+
+
+    var timestamp = +new Date;
+    var html_str = '<audio id="kjspeak" autoplay="autoplay">' +
+        '<source src="/static/sayit.mp3?t='+timestamp+'" type="audio/mpeg" />' +
+        '</audio>'
+    $('#player').html(html_str);
+
+    $('#kjspeak').bind("playing", function() {
+        console.log("Event: playing.");
+        this.volume = '0.9';
+        var bplayer = document.getElementById('bumpsong');
+        bplayer.volume = '0.45';
+    });
+
+    $('#kjspeak').bind("pause", function() {
+        console.log("Event: paused.");
+    });
+
+    $('#kjspeak').on('canplay', function() {
+        this.play();
+    });
+
+    $('#kjspeak').on('ended', function() {
+        var bplayer = document.getElementById('bumpsong');
+        bplayer.volume = '0.4';
+    });
+
+  /*
+  var msg = new SpeechSynthesisUtterance();
+  var voices = window.speechSynthesis.getVoices();
+  msg.voice = voices[10];
+  msg.voiceURI = "native";
+  msg.volume = 1;
+  msg.rate = 1;
+  msg.pitch = 0.8;
+  msg.text = m;
+  msg.lang = 'en-US';
+  speechSynthesis.speak(msg);
+  */
+}
 
 function randomChoice(arr) {
     return arr[Math.floor(arr.length * Math.random())];
@@ -23,12 +76,129 @@ function randomChoice(arr) {
 function onLoad(data) {
     console.log("On Load...");
     
+    bumper_music();
     do_wait_song();
 
     //checkCookie();
     //alert($(data));
    // alert("Load");
 }
+
+
+function parseFile(file, callback){
+    if(localStorage[file.name]) return callback(JSON.parse(localStorage[file.name]));
+    ID3v2.parseFile(file,function(tags){
+        //to not overflow localstorage
+        localStorage[file.name] = JSON.stringify({
+        Title: tags.Title,
+        Artist: tags.Artist,
+        Album: tags.Album,
+        Genre: tags.Genre
+        });
+        callback(tags);
+    })
+}
+function canPlay(type){
+    var a = document.createElement('audio');
+    return !!(a.canPlayType && a.canPlayType(type).replace(/no/, ''));
+}
+
+var mp3s = {};
+var cdgs = {};
+
+function getSongs(files){
+    console.log("GET SONGS");
+    console.log(files);
+    console.log("GET SONGS END");
+
+    //$("#mask").style.display = 'none';
+    $("#mask").hide();
+    $("#startup").hide();
+    var queue = [];
+    var mp3 = canPlay('audio/mpeg;'), ogg = canPlay('audio/ogg; codecs="vorbis"');
+    for(var i = 0; i < files.length; i++){
+        var file = files[i];
+    
+        var path = file.webkitRelativePath || file.mozFullPath || file.name;
+        if (path.indexOf('.AppleDouble') != -1) {
+            // Meta-data folder on Apple file systems, skip
+            continue;
+        }         
+        var size = file.size || file.fileSize || 4096;
+        if(size < 4095) { 
+            // Most probably not a real MP3
+            console.log(path);
+            continue;
+        }
+
+        
+        if(file.name.indexOf('mp3') != -1){ //only does mp3 for now
+            if(mp3){
+                console.log("Adding mp3:" + file.name);
+                mp3s[file.name] = file;
+                queue.push(file);
+            }
+        }
+        /*
+        if(file.name.indexOf('ogg') != -1  || file.name.indexOf('oga') != -1){
+        if(ogg){
+            queue.push(file);
+        }
+        }
+        */
+        if(file.name.indexOf('cdg') != -1){
+            console.log(file);
+            cdgs[file.name] = file;
+        }
+    }
+                            
+    var process = function(){
+        if(queue.length){
+        
+        var f = queue.shift();
+        parseFile(f,function(tags){
+            console.log(tags);
+            var bestGuess = guessSong(f.webkitRelativePath || f.mozFullPath || f.name); 
+            var artist = tags.Artist || bestGuess.Artist;
+            var title = tags.Title || bestGuess.Title;
+            var path = f.name;
+
+            $.ajax({
+                type: "GET",
+                url: "{{ url_for('add_song') }}",
+                data: {
+                    'artist':artist,
+                    'title':title,
+                    'path':path,
+                    'archive':'mp3_cdg'
+                },
+                async: false
+            });
+            
+            process();
+        })
+        var lq = queue.length;
+        setTimeout(function(){
+            if(queue.length == lq){
+                process();
+            }
+          },300);
+        }
+    }
+    process();
+    
+
+    sessionStorage["filelist"] = JSON.stringify(files[0]);
+    var oldfiles = JSON.parse(sessionStorage["filelist"]);
+    console.log("OLD FILES:::");
+    console.log(oldfiles);
+
+    console.log("FILES:::"); 
+    console.log(files);
+    console.log("^^FILES");
+}
+
+
 function do_play_song(artist, title, path, archive) {
     $.ajax({
         type: "GET",
@@ -50,7 +220,7 @@ function do_play_song(artist, title, path, archive) {
 }
 
 function youtube_embed(data) {
-   
+    bumper_stop();
     set_stage();
     
     var width = window.innerWidth * 0.8;
@@ -121,9 +291,61 @@ function set_stage() {
     $('#KJ').hide();
 }
 
+function bumper_music() {
+    var mp3 = randomChoice({{ bumper_songs|safe }});
+
+    var html_str = '<audio id="bumpsong" autoplay="autoplay">' +
+        '<source src="/static/tracks/'+ mp3 +'" type="audio/mpeg" />' +
+        '</audio>'
+    $('#bumper_player').html(html_str);
+
+    $('#bumpsong').bind("playing", function() {
+        console.log("Event: playing.");
+        this.volume = '0.5';
+    });
+
+    $('#bumpsong').bind("pause", function() {
+        console.log("Event: paused.");
+    });
+
+    $('#bumpsong').on('canplay', function() {
+        this.play();
+    });
+
+    $('#bumpsong').on('ended', function() {
+        bumper_music();
+    });
+}
+
+function bumper_stop() {
+    var player = document.getElementById('bumpsong');
+    player.pause();
+    player.src = player.src;
+}
+
 function cdg_player(data) {
+    bumper_stop();
     set_stage();
     console.log(data);
+
+    //var t_mp3 = mp3s[data.path];
+    var t_mp3 = mp3s[data.audio];
+    var filename = data.path.slice(0,-4);
+    var cdg_name = filename + '.cdg';
+    var cdg = cdgs[cdg_name];
+
+
+    /*
+    if(window.createObjectURL){
+        mp3_url = window.createObjectURL(t_mp3)
+    }else if(window.createBlobURL){
+        mp3_url = window.createBlobURL(t_mp3)
+    }else if(window.URL && window.URL.createObjectURL){
+        mp3_url = window.URL.createObjectURL(t_mp3)
+    }else if(window.webkitURL && window.webkitURL.createObjectURL){
+        mp3_url = window.webkitURL.createObjectURL(t_mp3)
+    }
+    */
 
     var width = window.innerWidth * 0.8;
     var height = window.innerHeight * 0.8;
@@ -131,33 +353,39 @@ function cdg_player(data) {
     width = Math.max(1024, width);
     height = Math.max(768, height);
 
+    var scale = Math.floor(width/320);
+    //width = 320;
+    //height = 200;
+
     console.log("W: " + width + "  H: " + height);
+    var timestamp = +new Date;
+    var mp3_url = "/static/play.mp3?t="+timestamp;
 
     var html_str = '<div id="karaoke-player"></div>' +
-        '<canvas id="karaoke-display" width="'+width+'" height="'+height+'" >' +
+        '<canvas style="transformOrigin: 160 108; transform: scale('+scale+');" id="karaoke-display" width="320" height="216" >' +
         '</canvas>' +
         '<audio id="song" autoplay="autoplay">' +
-        '<source src="{{ url_for('static', filename='play.mp3') }}?t='+ 
-        data.timestamp + '" type="audio/mpeg" />' +
+        '<source src="'+ mp3_url +'" type="audio/mpeg" />' +
         '</audio>'
     $('#cdg_player').html(html_str);
-    
+
 	var player2 = new CDGPlayer(document.getElementById('karaoke-display'));
-    var timestamp = +new Date;
 
     $('#song').bind("playing", function() {
         console.log("Event: playing.");
         player2.play();
+        this.volume = '0.9';
     });
     $('#song').bind("pause", function() {
         console.log("Event: paused.");
         player2.pause();
     });
     player2.load("{{ url_for('static', filename='play.cdg') }}?t=" + timestamp);
-    //player2.loadFile(data.path);
+    //player2.loadFile(cdg);
 
     $('#song').on('canplay', function() {
-            this.play();
+        console.log(this);
+        this.play();
     });
 
     //$('#karaoke-display').css("width", "100%");
@@ -202,11 +430,23 @@ function song_end(data) {
 
     $('#KJ').html("<h3>Let's here it for "+data.username+"!</h3>");
     setTimeout(function() {do_wait_song();}, 5000);
+    bumper_music();
 }
 
 function youtube_window(data) {
     console.log("Start youtube window"); 
     console.log(data);
+    bumper_stop();
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('play_youtube') }}",
+        data: {
+            'song_data': JSON.stringify(data)
+        },
+        async: false
+    });
+
+    /*
     var awindow;
     awindow = window.open('http://www.youtube.com/watch?v='+data.path);
     setTimeout(function() { console.log("Closing youtube."); awindow.close(); song_end(data);}, data.duration);
@@ -214,23 +454,13 @@ function youtube_window(data) {
     $('#cdg_player').hide();
     $('#youtube_embed').hide();
     $('#inter').hide();
+    */
 }
 
 function do_wait_song() {
     $('body').css({background : '#111111 url(/static/images/next1.jpeg) no-repeat fixed center / auto 100%'});
     $('#KJ').show();
-    
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('show_next') }}",
-        async: true,
-        success: function(data) {
-            console.log("Show next:");
-            console.log(data);
-            $('#queue').html(data);
-            $('#queue').show();
-        }
-    });
+   
 
     $.ajax({
         type: "GET",
@@ -239,9 +469,28 @@ function do_wait_song() {
         success: function(data) {
             //$('#play_cdg').html(data);
             if (data != null) {
+                $.ajax({
+                    type: "GET",
+                    url: "{{ url_for('show_next') }}",
+                    async: true,
+                    success: function(data) {
+                        console.log("Show next:");
+                        console.log(data);
+                        $('#queue').html(data);
+                        $('#queue').show();
+                    }
+                });
+
                 var bground = randomChoice(['next2.jpeg','microphone1.jpeg','microphone2.jpeg']);
                 $('body').css({background : '#111111 url(/static/images/'+bground+') no-repeat fixed center / auto 100%'});
-                $('#KJ').html("<h3>"+data.username+", step on UP!</h3>");
+                $('#KJ').html("<h3>Next up, "+data.username+", singing " + data.title +"!</h3>");
+                var saykj = "Next we have "+data.username+" singing "+data.title;
+                if(data.artist) {
+                    saykj = saykj +  " by "+data.artist;
+                }
+                saykj = saykj + ".  " + data.username+", step on UP!";
+                say(saykj);
+
             } else {
                 $('#KJ').html("<h2>Soooo, who's next?</h2>");
                 setTimeout(function() {do_wait_song();}, 5000);
@@ -252,13 +501,13 @@ function do_wait_song() {
             console.log(data);
 
             if (data.type == 'youtube_embed') {
-                setTimeout(function() {youtube_embed(data);}, 10000);
+                setTimeout(function() {youtube_embed(data);}, 12000);
             } else if (data.type == 'youtube') {
-                setTimeout(function() {youtube_window(data);}, 10000);
+                setTimeout(function() {youtube_window(data);}, 12000);
             } else if (data.type == 'cdg' ){
-                setTimeout(function() {cdg_player(data);}, 10000);
+                setTimeout(function() {cdg_player(data);}, 12000);
             } else if (data.type == 'cdgzip' ){
-                setTimeout(function() {cdg_player(data);}, 10000);
+                setTimeout(function() {cdg_player(data);}, 12000);
             } else {
                 console.log("Not recognized format: " + data.type);
                 setTimeout(function() {do_wait_song();}, 5000);
@@ -280,7 +529,28 @@ function do_wait_song() {
 
         </head>
         <body onload="onLoad()" class="hcenter">
+        <div id="startup">
+            <!--
+            <div id="prompt">
+                <center>
+                <input type="file" webkitdirectory directory multiple mozdirectory onchange="getSongs(this.files)">
+                </center>
+                <p style="padding-left: 15px">
+                Please choose your karaoke directory.
+                </p>
+            </div>
+            -->
+            <div id="support" style="position:absolute;z-index:99999;color:red;font-size:x-large"> <!-- insert cheap knockoff modernizer clone -->
+            
+            </div>
+        </div>
 
+            <div id="header">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=http://{{ ip }}:5000"></img>
+                Connect at <br>
+                http://{{ ip }}:5000
+            </div>
+            
             <div id="KJ" class="centerish">
             </div>
             <br>
@@ -291,11 +561,13 @@ function do_wait_song() {
             <div id="cdg_player">
             </div>
 
+            <div id="bumper_player">
+            </div>
+
             <div id="player">
             </div>
 
             <div id="youtube_embed" class="centered">
             </div>
-
         </body>
 </html>

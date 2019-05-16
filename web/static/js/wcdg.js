@@ -26,6 +26,10 @@ CDGContext.prototype.init = function() {
     this.hOffset = 0; 
     this.vOffset = 0;
     this.keyColor = null;
+    var offscreenCanvas = document.createElement('canvas');
+    this.offscreenCanvas = offscreenCanvas;
+    var ctx = this.offscreenCanvas.getContext('2d', { alpha: false });
+    this.ctx = ctx;
 
     this.clut = new Array(16); // color lookup table
     for (var i = 0; i < 16; i++) {
@@ -74,34 +78,46 @@ CDGContext.prototype.renderFrameDebug = function(canvas) {
 }
 
 CDGContext.prototype.renderFrame = function(canvas) {
-
     /* determine size of a 'pixel' that will fit. */
-    var pw = Math.min(Math.floor(canvas.width / this.DISPLAY_WIDTH), 
-                      Math.floor(canvas.height / this.DISPLAY_HEIGHT));
-    
-    /* canvas is too small */
-    if (pw == 0) {
-        /* could indicate this ... */
-        return;
-    }
+    /*var pw = Math.min(Math.floor(canvas.width / this.DISPLAY_WIDTH), 
+                    Math.floor(canvas.height / this.DISPLAY_HEIGHT));
+    */
 
+    /* canvas is too small */
+    
+    //if (pw == 0) {
+        /* could indicate this ... */
+      //  return;
+   // }
+
+    pw = 1;
+
+    //var pw = 1;
     var canvas_xoff = 0;
     var canvas_yoff = 0;
-    var ctx = canvas.getContext('2d');
+    //var offscreenCanvas = document.createElement('canvas');
+    //offscreenCanvas.width = canvas.width;
+    //offscreenCanvas.height = canvas.height;
+    this.offscreenCanvas.width = canvas.width;
+    this.offscreenCanvas.height = canvas.height;
+   // var ctx = this.offscreenCanvas.getContext('2d', { alpha: false });
+    var ctx = canvas.getContext('2d', { alpha: false });
     for (var x=0; x < this.DISPLAY_WIDTH; x++) {
         for (var y=0; y < this.DISPLAY_HEIGHT; y++) {
             var px = x + this.hOffset + this.DISPLAY_BOUNDS[0]; 
             var py = y + this.vOffset + this.DISPLAY_BOUNDS[1];
             var color_index = this.pixels[px + py*this.WIDTH];
             if (color_index == this.keyColor) {
-                ctx.clearRect(canvas_xoff + x*pw, canvas_yoff + y*pw, pw, pw);
+                //this.ctx.clearRect(canvas_xoff + x*pw, canvas_yoff + y*pw, pw, pw);
             }
             else {
                 ctx.fillStyle = this.clut[color_index];
-                ctx.fillRect(canvas_xoff + x*pw, canvas_yoff + y*pw, pw, pw);
+                ctx.fillRect(canvas_xoff + x, canvas_yoff + y, 1, 1);
             }
         }
     }
+    //var on_ctx = canvas.getContext('2d').drawImage(this.offscreenCanvas, 0, 0);
+    //canvas.getContext('2d').drawImage(this.offscreenCanvas, 0, 0);
 };
 
 var CDG_NOOP            =  0;
@@ -529,25 +545,39 @@ CDGPlayer.prototype.init = function(canvas) {
     this.instructions = [];
     this.pc = -1;
     this.updater = null;
+    this.drifter = null;
     this.startTime = 0;
     this.paused = false;
+    this.ready = false;
+    this.calcffamt = true;
     this.pauseTime;
+    this.ffamt = 0;
 };
 
-/*
 CDGPlayer.prototype.loadFile = function(file) {
+    console.log(file);
+    var me = this;
     var reader = new FileReader();
     reader.onload = (function(e) {
+        console.log("ON LOAD");
+        console.log(e);
+        console.log(this);
         var data = reader.result;
         var parser = new CDGParser();
         console.log(parser);
-        this.instructions = parser.parseDataString(data);
-        this.pc = 0;
+        me.instructions = parser.parseDataString(data);
+        console.log("LOADED DATA");
+        me.pc = 0;
+        console.log(this.pc);
+        me.ready = true;
+        console.log("CDG READY!");
     })
-    //reader.readAsBinaryString(file);
-    reader.readAsText(file);
+    reader.readAsBinaryString(file);
+    //reader.readAsText(file);
+    //console.log(this.pc);
+    //console.log(this.instructions);
+    //console.log(this);
 }
-*/
 
 CDGPlayer.prototype.load = function(url) {
     console.log("Loading: " + url);
@@ -569,12 +599,12 @@ CDGPlayer.prototype.load = function(url) {
           console.log("ERROR: " + error);
           cdgLog("error loading cdg from url " + url);
         },
-        
     });
 };
 
 CDGPlayer.prototype.render = function() {
-    this.context.renderFrameDebug(this.canvas);
+    //this.context.renderFrameDebug(this.canvas);
+    this.context.renderFrame(this.canvas);
 };
 
 CDGPlayer.prototype.step = function() {
@@ -605,6 +635,10 @@ CDGPlayer.prototype.playerTicks = function() {
 };
 
 CDGPlayer.prototype.play = function() {
+    console.log("Will play CDG now...");
+    console.log(this.pc);
+    console.log(this.instructions);
+    console.log(this);
     if (this.paused) {
         console.log("Un-Paused");
         this.paused = false;
@@ -617,7 +651,8 @@ CDGPlayer.prototype.play = function() {
     console.log("STUFF:", stuff);
     this.startTime = this.rawTicks();
     var thisPlayer = this;
-    this.updater = setInterval(function() {thisPlayer.update();}, 50);
+    this.updater = setInterval(function() {thisPlayer.update();}, 200);
+    this.drifter = setInterval(function() {thisPlayer.fixdrift();}, 5000);
 };
 
 CDGPlayer.prototype.pause = function() {
@@ -638,15 +673,24 @@ CDGPlayer.prototype.update = function() {
     }
 
     if (this.pc >= 0) {
-        var now = this.playerTicks();
-        var pcForNow = 4*Math.floor(3*now/40); 
+        if (this.calcffamt = true) {
+            // Recalculate ffamt
+            var now = this.playerTicks();
+            var pcForNow = 4*Math.floor(3*now/40); 
 
-        // Difference between current and start counter
-        var ffAmt = pcForNow - this.pc;
-
-        if (ffAmt > 0) {
-            this.fastForward(ffAmt);
-            this.render();
+            // Difference between current and start counter
+            this.ffamt = pcForNow - this.pc;
+            this.calcffamt = false;
         }
+
+        if (this.ffamt > 0) {
+            this.fastForward(this.ffamt);
+            this.render();
+        } 
     }
+};
+
+
+CDGPlayer.prototype.fixdrift = function() {
+    this.calcffamt = true;
 };
