@@ -63,7 +63,7 @@ function openMenu(x) {
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <body>
 
-<div class="w3-sidebar w3-bar-block w3-card w3-collapse w3-animate-left" style="width:300px;" id="leftMenu">
+<div class="w3-sidebar w3-bar-block w3-card w3-collapse w3-animate-left" style="width:400px;" id="leftMenu">
   <button onclick="closeLeftMenu()" class="w3-bar-item w3-button w3-large">Close &times;</button>
   {% block sidebar %}
   <div id=sidebar>
@@ -79,7 +79,7 @@ function openMenu(x) {
 	<a href="{{ url_for('logout') }}"><li>Logout</li></a>
 </div>
 
-<div class="w3-main" style="margin-left:300px">
+<div class="w3-main" style="margin-left:400px">
 
 <div class="w3-teal">
   <button class="w3-button w3-teal w3-xlarge w3-left" onclick="openLeftMenu()">&#9776;</button>
@@ -126,7 +126,7 @@ function openMenu(x) {
                 {% endblock %}
             </div>
 
-            <div id="content" class="w3-main" style="margin-left:300px; margin-top:60px;">
+            <div id="content" class="w3-main" style="margin-left:400px; margin-top:60px;">
                 {% block content %}
                 {% endblock %}
             </div>

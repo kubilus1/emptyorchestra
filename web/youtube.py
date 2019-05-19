@@ -71,7 +71,8 @@ class yt_scrape(object):
                     'vidid': vidid,
                     'title': title.replace('"',"'"),
                     'imgurl': imgurl,
-                    'vidurl': vidurl
+                    'vidurl': vidurl,
+                    'duration': duration
                 })
 
         return karaokes

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify
+from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, abort
 app = Flask(__name__)
 
 import re
@@ -21,6 +21,8 @@ import webbrowser
 import id3reader
 import pprint
 import threading
+from functools import wraps
+
 import yaml
 
 from gtts import gTTS
@@ -42,6 +44,18 @@ db = None
 conf = None 
 song_lock = threading.RLock()
 RUNNING = True
+
+
+def local_only(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        if str(request.remote_addr) == "127.0.0.1":
+            print("Local request allowed.")
+            return f(*args, **kwargs)
+        else:
+            return abort(403)
+    return wrapped
+
 
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -112,6 +126,7 @@ def get_singer():
     )
 
 @app.route('/sayit')
+@local_only
 def sayit():
     message = request.args.get('message')
 
@@ -170,19 +185,19 @@ def search_web(term=None):
     yts = youtube.yt_scrape()
 
     karaokes = yts.search(term)
-
+    
     return render_template('web_results.html', items=karaokes[:50])
 
 
 def get_vid_duration(timestamp):
-    for fmt in ('PT%MM%SS', 'PT%MM'):
+    for fmt in ('PT%MM%SS', 'PT%MM', '%MM:%SS', '%M:%S'):
         try:
             dateval = datetime.strptime(timestamp, fmt)
             duration = int((dateval - datetime(1900, 1, 1)).total_seconds() * 1000) + 5000
             return duration
         except ValueError:
             pass
-    raise ValueError('no valid date format found')
+    raise ValueError('no valid date format found for (%s)' % timestamp)
 
 @app.route('/unqueue_song/')
 def unqueue_song():
@@ -255,12 +270,16 @@ def queue_song():
     path = request.args.get('path')
     archive = request.args.get('archive')
     audio = ""
-    duration = 600000
+    duration = request.args.get('duration')
 
     username = request.cookies.get('eoname')
     print "Saving ", artist, title, path, archive, username
 
-    if archive == 'youtube':
+
+    if archive == 'youtube' and duration:
+        duration = get_vid_duration(duration) + 10000
+        play_type = 'youtube_embed'
+    elif archive == 'youtube' and duration is None:
         audio = ""
         status_url = "https://www.googleapis.com/youtube/v3/videos?id=%s&key=%s&part=status,contentDetails" % (path, conf.get('YOUTUBE_API_KEY'))
         embed = False
@@ -283,7 +302,6 @@ def queue_song():
         else:
             play_type = 'youtube'
             #path = 'http://www.youtube.com/watch?v=%s' % path
-
     elif archive.endswith('.zip'):
         print "Playing zip."
         play_type = 'cdgzip'
@@ -315,15 +333,28 @@ def show_next():
     return render_template("queue.html", queue={}) 
 
 @app.route('/karaoke/')
+@local_only
 def karaoke():
     #song_data = song_q.get()
     IP = get_ip()
     tracks = os.listdir('./static/tracks')
-    print(str(tracks))
+    images = os.listdir('./static/images')
+    next_images = [ x for x in images if x.startswith('next_') ]
+    backgrounds = [ x for x in images if x.startswith('bg_') ]
+    kj_images = [ x for x in images if x.startswith('kj_') ]
+
     print("My ip: %s" % IP)
-    return render_template('karaoke.html', ip=IP, bumper_songs=str(tracks))
+    return render_template(
+        'karaoke.html', 
+        ip=IP, 
+        bumper_songs=str(tracks),
+        backgrounds=str(backgrounds),
+        next_images=str(next_images),
+        kj_images=str(kj_images)
+    )
 
 @app.route('/wait_song/')
+@local_only
 def wait_song():
     global song_qs
     global last_song
@@ -389,15 +420,18 @@ def wait_song():
     return jsonify(song_data)
 
 @app.route('/control')
+@local_only
 def control():
     return render_template('control.html')
 
 @app.route('/skip_song')
+@local_only
 def skip_song():
     webview.load_url("http://127.0.0.1:5000/karaoke")
     return jsonify({"ret":"ok"})
 
 @app.route('/restart_song')
+@local_only
 def restart_song():
     global retry_song
     global last_song
@@ -409,7 +443,8 @@ def restart_song():
 def play_youtube():
     song_data = json.loads(request.args.get('song_data',"{}"))
     print("Received: %s" % song_data)
-    youtube_url = "http://www.youtube.com/watch?v=%s" % song_data.get('path')
+    #youtube_url = "http://www.youtube.com/watch?v=%s" % song_data.get('path')
+    youtube_url = "http://www.youtube.com/watch?v=%s?app=m" % song_data.get('path')
     sleep_seconds = (int(song_data.get('duration')/1000))
     print("About to play: %s" % youtube_url)
     webview.load_url(youtube_url)
@@ -579,6 +614,7 @@ def findKaraokes(kpath):
                 asong = {
                     'artist':fix_utf8(artist),
                     'title':fix_utf8(title),
+                    'filename':os.path.basename(path),
                     'path':path,
                     'archive':'',
                     'type': 'cdg_mp3',
@@ -605,6 +641,7 @@ def findKaraokes(kpath):
                         asong = {
                             'artist':fix_utf8(artist),
                             'title':title,
+                            'filename':os.path.basename(zippath),
                             'path':f,
                             'archive':zippath,
                             'type': 'zip_mp3',
@@ -669,6 +706,7 @@ def run_it():
     app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
 
 @app.route('/find_songs/')
+@local_only
 def get_folder():
     kfolder = webview.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
             allow_multiple=False, file_types=())
@@ -682,6 +720,7 @@ def check_health():
     while RUNNING:
         if not webview.window_exists(uid='master'):
             RUNNING=False
+        time.sleep(1)
 
     print("Main window no longer running.")
     webview.destroy_window(uid=control_id)

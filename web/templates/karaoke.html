@@ -7,7 +7,7 @@
         <!--<link rel="stylesheet" type="text/css" href="css/general.css">-->
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/karaoke.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/simplegrid.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/player.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/player.css') }}">
 		<link href="https://fonts.googleapis.com/css?family=Luckiest+Guy" rel="stylesheet">
         <meta name="author" content="Matt Kubilus" />
         <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
@@ -54,19 +54,6 @@ function say(m) {
         var bplayer = document.getElementById('bumpsong');
         bplayer.volume = '0.4';
     });
-
-  /*
-  var msg = new SpeechSynthesisUtterance();
-  var voices = window.speechSynthesis.getVoices();
-  msg.voice = voices[10];
-  msg.voiceURI = "native";
-  msg.volume = 1;
-  msg.rate = 1;
-  msg.pitch = 0.8;
-  msg.text = m;
-  msg.lang = 'en-US';
-  speechSynthesis.speak(msg);
-  */
 }
 
 function randomChoice(arr) {
@@ -284,7 +271,7 @@ function youtube_embed(data) {
 
 
 function set_stage() {
-    var stage = randomChoice(['theater1.jpeg', 'concert1.jpeg', 'concert2.jpeg', 'ampitheater1.jpeg','bar1.jpeg']);
+    var stage = randomChoice({{ backgrounds | safe }});
 
     $('body').css({background : '#111111 url(/static/images/'+stage+') no-repeat fixed center / 100% auto'});
     $('#queue').hide();
@@ -292,7 +279,7 @@ function set_stage() {
 }
 
 function bumper_music() {
-    var mp3 = randomChoice({{ bumper_songs|safe }});
+    var mp3 = randomChoice({{ bumper_songs | safe }});
 
     var html_str = '<audio id="bumpsong" autoplay="autoplay">' +
         '<source src="/static/tracks/'+ mp3 +'" type="audio/mpeg" />' +
@@ -323,6 +310,19 @@ function bumper_stop() {
     player.src = player.src;
 }
 
+function resize_cdg() {
+    var width = window.innerWidth * 0.8;
+    var height = window.innerHeight * 0.8;
+
+    width = Math.max(1024, width);
+    height = Math.max(768, height);
+
+    //var scale = Math.floor(width/320);
+    var scale = width/320;
+
+    document.getElementById("karaoke-display").style.transform = "scale("+scale+")";
+}
+
 function cdg_player(data) {
     bumper_stop();
     set_stage();
@@ -345,7 +345,6 @@ function cdg_player(data) {
     }else if(window.webkitURL && window.webkitURL.createObjectURL){
         mp3_url = window.webkitURL.createObjectURL(t_mp3)
     }
-    */
 
     var width = window.innerWidth * 0.8;
     var height = window.innerHeight * 0.8;
@@ -358,16 +357,22 @@ function cdg_player(data) {
     //height = 200;
 
     console.log("W: " + width + "  H: " + height);
+
+    */
     var timestamp = +new Date;
     var mp3_url = "/static/play.mp3?t="+timestamp;
 
     var html_str = '<div id="karaoke-player"></div>' +
-        '<canvas style="transformOrigin: 160 108; transform: scale('+scale+');" id="karaoke-display" width="320" height="216" >' +
+        '<canvas style="transformOrigin: 160 108;" id="karaoke-display" width="320" height="216" >' +
         '</canvas>' +
         '<audio id="song" autoplay="autoplay">' +
         '<source src="'+ mp3_url +'" type="audio/mpeg" />' +
         '</audio>'
     $('#cdg_player').html(html_str);
+
+    resize_cdg();
+    window.addEventListener('resize', resize_cdg, false);
+    window.addEventListener('orientationchange', resize_cdg, false);
 
 	var player2 = new CDGPlayer(document.getElementById('karaoke-display'));
 
@@ -443,7 +448,10 @@ function youtube_window(data) {
         data: {
             'song_data': JSON.stringify(data)
         },
-        async: false
+        async: true,
+        complete: function(data) {
+            song_end(data);
+        }
     });
 
     /*
@@ -458,9 +466,9 @@ function youtube_window(data) {
 }
 
 function do_wait_song() {
-    $('body').css({background : '#111111 url(/static/images/next1.jpeg) no-repeat fixed center / auto 100%'});
+    var kj_bground = randomChoice({{ kj_images | safe }});
+    $('body').css({background : '#111111 url(/static/images/'+kj_bground+') no-repeat fixed center / auto 100%'});
     $('#KJ').show();
-   
 
     $.ajax({
         type: "GET",
@@ -481,7 +489,7 @@ function do_wait_song() {
                     }
                 });
 
-                var bground = randomChoice(['next2.jpeg','microphone1.jpeg','microphone2.jpeg']);
+                var bground = randomChoice({{ next_images | safe }});
                 $('body').css({background : '#111111 url(/static/images/'+bground+') no-repeat fixed center / auto 100%'});
                 $('#KJ').html("<h3>Next up, "+data.username+", singing " + data.title +"!</h3>");
                 var saykj = "Next we have "+data.username+" singing "+data.title;

@@ -3,8 +3,8 @@
 On deck:
 
 <ol>
-    {% for item in queue %}
-    <li> {{ item.username }} - {{ item.title }} </li>
+    {% for k,v in queue.items() %}
+    <li> {{ v[0].username }} - {{ v[0].title }} </li>
     {% endfor %}
 </ol>
 </h3>

@@ -55,7 +55,7 @@ body {
     /*background-image:url('/site_media/images/gear.png');*/
     /*background-repeat:no-repeat;*/
     background-image:url('/static/images/paper1.jpeg');
-    max-width: 1024px;
+    max-width: 1440px;
     width:100%;
     display:block;
 }
@@ -64,7 +64,7 @@ body {
     top: 0;
 	left: 0;
     background-color: #DDDDFF;
-    max-width: 1024px;
+    /*max-width: 1024px;*/
     width:100%;
 }
 A{ font-family: arial; color: #808080; background: #DADADA}
