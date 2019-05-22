@@ -13,7 +13,7 @@
         <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
         <title>Empty Orchestra</title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-        <script src="{{ url_for('static', filename='js/wcdg.js') }}"></script>
+        <script src="{{ url_for('eo_script') }}"></script>
         <script type="text/javascript"> 
 
 function onLoad(data) {
@@ -52,7 +52,7 @@ function openMenu(x) {
 
 
         <meta name="viewport" content="width=device-width" />
-
+        <!-- end block head -->
         {% endblock %}
         </head>
 
@@ -68,6 +68,7 @@ function openMenu(x) {
   {% block sidebar %}
   <div id=sidebar>
   </div>
+  <!-- end block sidebar -->
   {% endblock %}
 </div>
 
@@ -123,9 +124,10 @@ function openMenu(x) {
 				</div>
 -->
 
+                <!-- end block menu -->
                 {% endblock %}
             </div>
-
+        </div>
             <div id="content" class="w3-main" style="margin-left:400px; margin-top:60px;">
                 {% block content %}
                 {% endblock %}

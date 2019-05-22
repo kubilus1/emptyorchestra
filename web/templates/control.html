@@ -1,50 +1,66 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<!--<html xmlns="http://www.w3.org/1999/xhtml">
-<div id="whole">
-    <head id="head">
-        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
-        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/layout.css') }}">
-        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/simplegrid.css') }}">
-        <meta name="author" content="Matt Kubilus" />
-        <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-        <title>Empty Orchestra</title>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-        <script type="text/javascript"> 
-            -->
 {% extends "layout.html" %}
 {% block head %}
   {{ super() }}
 <script type="text/javascript"> 
-function restart() {
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('restart_song') }}",
-        async: true
-    });
-}
-
-function skip() {
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('skip_song') }}",
-        async: true
-    });
-}
-
-function findsongs() {
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('get_folder') }}",
-        async: true
-    });
-}
-
-        </script>
+</script>
 {% endblock %}
+
+{% block menu %}
+{{ super() }}
+{% endblock %}
+
 {% block content %}
-        <button onclick="restart()">Restart</button>
-        <button onclick="skip()">Skip</button>
-        <button onclick="findsongs()">Find songs</button>
+
+<button onclick="restart()">Restart</button>
+<button onclick="skip()">Skip</button>
+<button onclick="playpause()">Play/Pause</button>
+<button onclick="findsongs()">Find songs</button>
+<button onclick="fullscreen()">Fullscreen</button>
+
+singer index: {{ singer_idx }}
+<ol>
+{% for k,v in song_qs.items() %}
+<li>
+    {% if loop.index0 == (singer_idx-1) %}<b>*{% endif %}
+    {{ k }}
+    {% if loop.index0 == (singer_idx-1) %}</b>{% endif %}
+<ol>
+    {% for song in v %}
+        <li>{{ song.arist }} - {{ song.title }} - {{ song.path }}</li>
+    {% endfor %}
+</ol>
+</li>
+{% endfor %}
+</ol>
+
+<br><br>
+    <!--<input type="text" id="song_search" onkeyup="search()" placeholder="Search .." title="Type something">-->
+    <input type="text" id="song_search" placeholder="Search .." title="Type something">
+    <button id="search_button" onclick="search()">Search</button>
+
+    <div class="data" id="data_loc"> </div>
+
+<h4>Web Results:</h4>
+<div class="data" id="data_web"> </div>
 {% endblock %}
 
+{% block onload %}
+$('#song_search').keypress(function(event) {
+	var keycode = (event.keyCode ? event.keyCode : event.which);
+    if(keycode == '13'){
+		search();		
+	}
+});
+
+$.ajax({
+    type: "GET",
+    url: "{{ url_for('local_songs') }}",
+    async: true,
+    success: function(data) {
+        $('#data_loc').html(data);
+        hide_rows();
+    }
+});
+var web_results = localStorage.getItem('web_results');
+$('#data_web').html(web_results);
+{% endblock %}

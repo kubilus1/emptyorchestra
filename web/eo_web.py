@@ -12,6 +12,7 @@ import time
 import shutil
 import urllib
 import urllib2
+import random
 import collections
 import Queue
 from datetime import datetime
@@ -43,8 +44,9 @@ singer_index = None
 db = None
 conf = None 
 song_lock = threading.RLock()
+db_lock = threading.RLock()
 RUNNING = True
-
+PAUSED  = False
 
 def local_only(f):
     @wraps(f)
@@ -107,22 +109,46 @@ def index():
     username = request.cookies.get('eoname')
     print "USERNAME:", username
     #return render_template('index.html', username=username)
-    return render_template('sing.html', username=username)
+    return render_template(
+    	'sing.html', 
+        username=username
+    )
+
+@app.route('/eo.js')
+def eo_script():
+    return render_template('eo.js')
 
 @app.route('/get_singer')
 def get_singer():
     print("/get_singer")
+    global db
     global song_qs
     username = request.cookies.get('eoname')
-    songs = song_qs.get(username, [])
     
-    print("Songs: %s" % songs)
+    with song_lock:
+        songs = song_qs.get(username, [])
+   
+    with song_lock:
+        singer_table = db.db.table('singer_table')
+        singer = singer_table.get(Query().singer_id == username) or {}
+        completed = singer.get('completed',[])
+        recommended = singer.get('recommended', [])
+
+        #room = Room.objects(name=session['singroom'])[0]
+        #songs = room.songs
+        #term = ' '.join(similar)
+        #songids = [x.id for x in songs]
+        #recommended = Song.objects(id__in=songids).search_text(term).order_by('$text_score')
+    
+    #print("Recommended: %s" % recommended)
+    #print("Completed: %s" % completed)
+    #print("Songs: %s" % songs)
 
     return render_template(
         "singerdata.html",
         queued=songs,
-        completed=[],
-        recommended=[]
+        completed=completed,
+        recommended=recommended
     )
 
 @app.route('/sayit')
@@ -147,6 +173,57 @@ def setUser():
     return resp
     #return redirect(url_for('index'))
 
+
+@app.route('/all_songs/')
+def all_songs():
+    global db
+
+    songs_table = db.db.table('songs')
+    print(len(songs_table))
+    out_songs = []
+    root_set = set()
+    song_paths = []
+    artist_set = set()
+
+    for song in songs_table:
+        #print song
+        song_path = song.get('path')
+        if song_path in song_paths:
+            # Duplicate path ids not allowed
+            continue
+
+        artist = song.get('artist').title()
+        if not artist:
+            artist = 'Unknown'
+
+        # Add song
+        out_songs.append({ 
+            "id": "song_%s" % song_path,
+            "text": song.get('title'),
+            "parentId": "artist_%s" % artist,
+            "hasItems": False
+        })
+        root_set.add(artist[0])
+        artist_set.add(artist)
+        song_paths.append(song_path)
+
+    for artist in artist_set:
+        out_songs.append({ 
+            "id": "artist_%s" % artist, 
+            "text": artist,
+            "parentId": "item_%s" % artist[0]
+        })
+
+    for item in root_set:
+        out_songs.append({
+            "id": "item_%s" % item,
+            "text": item,
+            "parentId": -1
+        })
+
+    #print(out_songs)
+    return jsonify(out_songs)
+    #return jsonify(songs_table)
 
 @app.route('/search_local/')
 @app.route('/search_local/<term>')
@@ -199,6 +276,11 @@ def get_vid_duration(timestamp):
             pass
     raise ValueError('no valid date format found for (%s)' % timestamp)
 
+@app.route('/fullscreen')
+@local_only
+def fullscreen():
+    webview.toggle_fullscreen(uid='master')
+
 @app.route('/unqueue_song/')
 def unqueue_song():
     global song_qs
@@ -206,13 +288,15 @@ def unqueue_song():
     idx = request.args.get('idx')
     username = request.cookies.get('eoname')
 
-    songs = song_qs.get(username, [])
+    with song_lock:
+        songs = song_qs.get(username, [])
 
     new_songs = [
         song for song in songs if song.get('path') != path
     ]
 
-    song_qs[username] = new_songs
+    with song_lock:
+        song_qs[username] = new_songs
 
     return '{"ret":"ok"}'
 
@@ -222,10 +306,10 @@ def queue_up():
     idx = int(request.args.get('idx'))
     username = request.cookies.get('eoname')
 
-    songs = song_qs.get(username, [])
-
-    if idx > 0:
-        songs.insert(idx-1, songs.pop(idx))
+    with song_lock:
+        songs = song_qs.get(username, [])
+        if idx > 0:
+            songs.insert(idx-1, songs.pop(idx))
 
     return '{"ret":"ok"}'
 
@@ -235,8 +319,9 @@ def queue_down():
     idx = int(request.args.get('idx'))
     username = request.cookies.get('eoname')
 
-    songs = song_qs.get(username, [])
-    songs.insert(idx+1, songs.pop(idx))
+    with song_lock:
+        songs = song_qs.get(username, [])
+        songs.insert(idx+1, songs.pop(idx))
 
     return '{"ret":"ok"}'
 
@@ -320,17 +405,21 @@ def queue_song():
         "timestamp":time.time()
     }
 
-    song_qs.setdefault(username, []).append(song_data)
+    with song_lock:
+        song_qs.setdefault(username, []).append(song_data)
+   
     return jsonify({'status':'ok'})
 
 @app.route('/show_next/')
 def show_next():
     global song_qs
-    #q = list(song_q.queue)
-    #q = []
-    print "Qs:", song_qs
-    #return jsonify(q)
-    return render_template("queue.html", queue={}) 
+    global singer_index
+
+    return render_template(
+        "queue.html", 
+        song_qs=song_qs,
+        singer_idx=singer_index
+        ) 
 
 @app.route('/karaoke/')
 @local_only
@@ -356,6 +445,8 @@ def karaoke():
 @app.route('/wait_song/')
 @local_only
 def wait_song():
+    global db
+    global conf
     global song_qs
     global last_song
     global retry_song
@@ -363,30 +454,110 @@ def wait_song():
 
     print "Waiting for song request %s" % singer_index
 
-    if retry_song:
-        retry_song = False
-        return jsonify(last_song)
+    while PAUSED:
+        return jsonify(None)
 
-    q_len = len(song_qs)
+    with song_lock:
+        if retry_song:
+            retry_song = False
+            return jsonify(last_song)
+
+    with song_lock:
+        q_len = len(song_qs)
     singer_queue = []
     for i in xrange(q_len):
         if singer_index >= q_len:
             singer_index = 0
 
-        singer_queue = song_qs.values()[singer_index]
-        singer_index += 1
+        with song_lock:
+            singer_queue = song_qs.values()[singer_index]
+            singer_index += 1
 
         if len(singer_queue) > 0:
             break
 
     try:
-        song_data = singer_queue.pop(0)
+        with song_lock:
+            song_data = singer_queue.pop(0)
     except IndexError:
         print "No data yet..."
         return jsonify(None)
 
-    print "Preparing to play:", song_data
+    #
+    # Going to try to play a song
+    # 
 
+
+    #
+    # Mark 'completed' songs
+    #
+    username = song_data.get('username')
+    with song_lock:
+        # Save the song as 'completed'
+        singer_table = db.db.table('singer_table')
+        singer = singer_table.get(Query().singer_id == username) or {}
+        completed = singer.get('completed', {}) 
+        completed_tuple = [ (x.get('artist'), x.get('title')) for x in completed ]
+        if (song_data.get('artist'),song_data.get('title')) not in completed_tuple:
+            singer.setdefault('completed', []).append({
+                'artist':song_data.get('artist'),
+                'title':song_data.get('title'),
+                'path':song_data.get('path'),
+                'archive':song_data.get('archive')
+            })
+            singer['singer_id'] = username
+            singer_table.upsert(
+                singer,
+                Query().singer_id == username
+            )
+    
+    #
+    # Get recommendations
+    #
+    #singer = singer_table.get(Query().singer_id == username) or {}
+    recommended = []
+    similar = set()
+    for s in completed:
+        print(s.get('artist'))
+        d = do_url("http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
+            urllib.quote_plus(s.get('artist').strip()),
+            conf.get('LASTFM_KEY')
+        ))
+        print(d)
+        if d:
+            jdata = json.loads(d)
+            similar.update([ x.get('name') for x in
+                jdata.get('similarartists',{}).get('artist',{}) ])
+
+        with song_lock:
+            songs_table = db.db.table('songs')
+
+    for artist in similar: 
+        print("Searching for: %s" % artist)
+        with song_lock:
+            found = songs_table.search(
+                (Query().artist.test(search_func, artist))
+            )
+        
+        for item in found:
+            existing_recs = [ (x.get('artist').lower(), x.get('title').lower()) for x in recommended ]
+            if (item.get('artist').lower(),item.get('title').lower()) not in existing_recs:
+                print("Recommending: %s" % item)
+                recommended.append(item)
+            else:
+                print("Duplicate: %s" % item)
+
+    with song_lock:
+        singer_table = db.db.table('singer_table')
+        singer = singer_table.get(Query().singer_id == username) or {}
+        singer['singer_id'] = username
+        singer['recommended'] = random.sample(recommended, min(len(recommended), 8))
+        singer_table.upsert(
+            singer,
+            Query().singer_id == username
+        )
+
+    print "Preparing to play:", song_data
     play_type = song_data.get('type')
 
     if play_type == 'cdg':
@@ -416,13 +587,40 @@ def wait_song():
 
     print "Got a song request! :", song_data
     #return render_template('player.html', song=song_data)
-    last_song = song_data
+    with song_lock:
+        last_song = song_data
+    
     return jsonify(song_data)
+
+@app.route('/local_songs')
+def local_songs():
+    songs = db.db.table('songs').all()
+    return render_template(
+    	'local_songs.html', 
+	songs=sorted(songs, key = lambda i: (i['artist'].lower(), i['title'].lower()))
+    )
 
 @app.route('/control')
 @local_only
 def control():
-    return render_template('control.html')
+    global song_qs
+    global singer_index
+    print "Qs:", song_qs
+    return render_template(
+    	'control.html',
+        song_qs=song_qs,
+        singer_idx=singer_index
+    )
+
+@app.route('/play_pause')
+@local_only
+def play_pause():
+    global PAUSED
+    if PAUSED:
+        PAUSED = False
+    else:
+        PAUSED = True
+    return jsonify({"ret":"ok"})
 
 @app.route('/skip_song')
 @local_only
@@ -435,7 +633,8 @@ def skip_song():
 def restart_song():
     global retry_song
     global last_song
-    retry_song = True
+    with song_lock:
+        retry_song = True
     webview.load_url("http://127.0.0.1:5000/karaoke")
     return jsonify({"ret":"ok"})
 
@@ -701,7 +900,8 @@ def run_it():
         "ControlPanel", 
         "http://127.0.0.1:5000/control",
         width=800,
-        height=300
+        height=500,
+        debug=True
     )
     app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
 

@@ -16,113 +16,25 @@ function getsinger() {
 }
 
 function loadData() {
-    var local_results = localStorage.getItem('local_results');
+    //var local_data = localStorage.getItem('local_data');
+    var local_data;
+    if(! local_data) {
+        $.ajax({
+            type: "GET",
+            url: "{{ url_for('local_songs') }}",
+            async: true,
+            success: function(data) {
+                localStorage.setItem('local_data', data);
+                $('#data_loc').html(data);
+                hide_rows();
+            }
+        });
+    } else {
+        //$('#data_loc').html(local_data);
+    }
+
     var web_results = localStorage.getItem('web_results');
-    $('#data_loc').html(local_results);
     $('#data_web').html(web_results);
-}
-
-function manual_queue() {
-    var title = document.getElementById('title').value; 
-    var song_id = document.getElementById('song_id').value; 
-
-    do_queue_song("", title, song_id, "youtube");
-}
-function query() {
-    var search_term = document.getElementById('search_query').value; 
-    console.log("Search term:" + search_term);
-    //alert("From was submitted:" + search_term);
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('search_local') }}",
-        data: {'term':search_term},
-        async: true,
-        success: function(data) {
-            //console.log("Local return: " + data);
-            localStorage.setItem('local_results', data);
-            $('#data_loc').html(data);
-        }
-    });
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('search_web') }}",
-        data: {'term':search_term},
-        async: true,
-        success: function(data) {
-            //console.log("Web return: " + data);
-            localStorage.setItem('web_results', data);
-            $('#data_web').html(data);
-        }
-    });
-    //server.do_local_query(search_term, onLocalReturn); 
-    //server.do_web_query(search_term, onWebReturn); 
-}
-
-function do_queue_song(artist, title, path, archive, duration) {
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('queue_song') }}",
-        data: {
-            'artist':artist,
-            'title':title,
-            'path':path,
-            'archive':archive,
-            'duration':duration
-        },
-        async: true,
-        success: function(data) {
-            console.log("Queueing song success: " + data);
-            $('#user_data').html("You chose " + unescape(title) + " next!");
-        }
-
-    });
-   
-}
-
-function do_unqueue_song(artist, title, path, archive, idx) {
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('unqueue_song') }}",
-        data: {
-            'path':path,
-            'idx':idx
-        },
-        async: true,
-        success: function(data) {
-            console.log("Un-Queueing song success: " + data);
-            //$('#user_data').html("You chose " + unescape(title) + " next!");
-        }
-
-    });
-}
-
-
-function do_queue_up(idx) {
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('queue_up') }}",
-        data: {
-            'idx':idx
-        },
-        async: true,
-        success: function(data) {
-            console.log("Queue up song success: " + data);
-        }
-    });
-}
-
-function do_queue_down(idx) {
-    $.ajax({
-        type: "GET",
-        url: "{{ url_for('queue_down') }}",
-        data: {
-            'idx':idx
-        },
-        async: true,
-        success: function(data) {
-            console.log("Queue down song success: " + data);
-        }
-    });
 }
 
 </script>
@@ -147,11 +59,13 @@ $.post(
 </script>
 
 {% endif %}  
-<div id="user_data"> </div>
+<!--
 <form action="javascript:query()">
     <input type=text name=query id=search_query>
     <input type=submit>
 </form>
+-->
+
 </div>
 {% endblock %}
 
@@ -166,7 +80,10 @@ $.post(
 {% endblock %}
 
 {% block content %}
-<h4>Local Results:</h4>
+<div id="user_data"> </div>
+    <input type="text" id="song_search" placeholder="Search .." title="Type something">
+    <button id="search_button" onclick="search()">Search</button>
+    
 <div class="data" id="data_loc"> </div>
 
 <h4>Web Results:</h4>
@@ -178,4 +95,10 @@ $.post(
 {% block onload %}
     getsinger();
     loadData();    
+    $('#song_search').keypress(function(event) {
+        var keycode = (event.keyCode ? event.keyCode : event.which);
+        if(keycode == '13'){
+            search();		
+        }
+    });
 {% endblock %}

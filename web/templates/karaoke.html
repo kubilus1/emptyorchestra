@@ -90,102 +90,6 @@ function canPlay(type){
     return !!(a.canPlayType && a.canPlayType(type).replace(/no/, ''));
 }
 
-var mp3s = {};
-var cdgs = {};
-
-function getSongs(files){
-    console.log("GET SONGS");
-    console.log(files);
-    console.log("GET SONGS END");
-
-    //$("#mask").style.display = 'none';
-    $("#mask").hide();
-    $("#startup").hide();
-    var queue = [];
-    var mp3 = canPlay('audio/mpeg;'), ogg = canPlay('audio/ogg; codecs="vorbis"');
-    for(var i = 0; i < files.length; i++){
-        var file = files[i];
-    
-        var path = file.webkitRelativePath || file.mozFullPath || file.name;
-        if (path.indexOf('.AppleDouble') != -1) {
-            // Meta-data folder on Apple file systems, skip
-            continue;
-        }         
-        var size = file.size || file.fileSize || 4096;
-        if(size < 4095) { 
-            // Most probably not a real MP3
-            console.log(path);
-            continue;
-        }
-
-        
-        if(file.name.indexOf('mp3') != -1){ //only does mp3 for now
-            if(mp3){
-                console.log("Adding mp3:" + file.name);
-                mp3s[file.name] = file;
-                queue.push(file);
-            }
-        }
-        /*
-        if(file.name.indexOf('ogg') != -1  || file.name.indexOf('oga') != -1){
-        if(ogg){
-            queue.push(file);
-        }
-        }
-        */
-        if(file.name.indexOf('cdg') != -1){
-            console.log(file);
-            cdgs[file.name] = file;
-        }
-    }
-                            
-    var process = function(){
-        if(queue.length){
-        
-        var f = queue.shift();
-        parseFile(f,function(tags){
-            console.log(tags);
-            var bestGuess = guessSong(f.webkitRelativePath || f.mozFullPath || f.name); 
-            var artist = tags.Artist || bestGuess.Artist;
-            var title = tags.Title || bestGuess.Title;
-            var path = f.name;
-
-            $.ajax({
-                type: "GET",
-                url: "{{ url_for('add_song') }}",
-                data: {
-                    'artist':artist,
-                    'title':title,
-                    'path':path,
-                    'archive':'mp3_cdg'
-                },
-                async: false
-            });
-            
-            process();
-        })
-        var lq = queue.length;
-        setTimeout(function(){
-            if(queue.length == lq){
-                process();
-            }
-          },300);
-        }
-    }
-    process();
-    
-
-    sessionStorage["filelist"] = JSON.stringify(files[0]);
-    var oldfiles = JSON.parse(sessionStorage["filelist"]);
-    console.log("OLD FILES:::");
-    console.log(oldfiles);
-
-    console.log("FILES:::"); 
-    console.log(files);
-    console.log("^^FILES");
-}
-
-
 function do_play_song(artist, title, path, archive) {
     $.ajax({
         type: "GET",
@@ -328,37 +232,6 @@ function cdg_player(data) {
     set_stage();
     console.log(data);
 
-    //var t_mp3 = mp3s[data.path];
-    var t_mp3 = mp3s[data.audio];
-    var filename = data.path.slice(0,-4);
-    var cdg_name = filename + '.cdg';
-    var cdg = cdgs[cdg_name];
-
-
-    /*
-    if(window.createObjectURL){
-        mp3_url = window.createObjectURL(t_mp3)
-    }else if(window.createBlobURL){
-        mp3_url = window.createBlobURL(t_mp3)
-    }else if(window.URL && window.URL.createObjectURL){
-        mp3_url = window.URL.createObjectURL(t_mp3)
-    }else if(window.webkitURL && window.webkitURL.createObjectURL){
-        mp3_url = window.webkitURL.createObjectURL(t_mp3)
-    }
-
-    var width = window.innerWidth * 0.8;
-    var height = window.innerHeight * 0.8;
-
-    width = Math.max(1024, width);
-    height = Math.max(768, height);
-
-    var scale = Math.floor(width/320);
-    //width = 320;
-    //height = 200;
-
-    console.log("W: " + width + "  H: " + height);
-
-    */
     var timestamp = +new Date;
     var mp3_url = "/static/play.mp3?t="+timestamp;
 
@@ -386,24 +259,11 @@ function cdg_player(data) {
         player2.pause();
     });
     player2.load("{{ url_for('static', filename='play.cdg') }}?t=" + timestamp);
-    //player2.loadFile(cdg);
 
     $('#song').on('canplay', function() {
         console.log(this);
         this.play();
     });
-
-    //$('#karaoke-display').css("width", "100%");
-    //$('#karaoke-display').css("width", window.innerWidth);
-    //$('#karaoke-display').css("height", window.innerHeight*0.80);
-    //$('#karaoke-display').css("width", window.innerWidth);
-    //var canvas = document.getElementById('karaoke-display');
-    //canvas.width = window.innerWidth;
-    //canvas.height = window.innerHeight;
-    //$('#karaoke-display').css("height", 768);
-    //$('#karaoke-display').css("width", width);
-    //$('#karaoke-player').css("width", width);
-    //$('#cdg_player').css("width", width);
 
     $('#song').on('ended', function() {
         $('#karaoke-display').hide();
@@ -538,16 +398,6 @@ function do_wait_song() {
         </head>
         <body onload="onLoad()" class="hcenter">
         <div id="startup">
-            <!--
-            <div id="prompt">
-                <center>
-                <input type="file" webkitdirectory directory multiple mozdirectory onchange="getSongs(this.files)">
-                </center>
-                <p style="padding-left: 15px">
-                Please choose your karaoke directory.
-                </p>
-            </div>
-            -->
             <div id="support" style="position:absolute;z-index:99999;color:red;font-size:x-large"> <!-- insert cheap knockoff modernizer clone -->
             
             </div>
