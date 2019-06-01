@@ -1,3 +1,4 @@
+import re
 import urllib
 import urllib2
 from bs4 import BeautifulSoup
@@ -8,6 +9,8 @@ def do_url(url):
     print resp
     data = resp.read()
     return data
+
+SONGID_RE = re.compile('(?P<artist>.+?)\W+-\W+(?P<title>.+?)(\W-\W.+)?\Z')
 
 class yt_api_3(object):
     def __init__(self, APIKEY):
@@ -34,7 +37,19 @@ class yt_api_3(object):
             vidurl = 'http://www.youtube.com/embed/%s?autoplay=1' % vidid
 
             if vidid:
+                artist = None
+                m = SONGID_RE.match(title)
+                if m:
+                    print("MATCH!!")
+                    print(m.groupdict())
+                    songdict = m.groupdict()
+                    artist = songdict.get('artist')
+                    title = songdict.get('title')
+                else:
+                    print("No match for (%s)" % title)
+
                 karaokes.append({
+                    'artist':artist.replace('"',"'"),
                     'title':title.replace('"',"'"),
                     'vidurl':vidurl,
                     'vidid':vidid,
@@ -67,8 +82,20 @@ class yt_scrape(object):
             vidurl = 'http://www.youtube.com/embed/%s?autoplay=1' % vidid
 
             if vidid:
+                artist = ''
+                m = SONGID_RE.match(title)
+                if m:
+                    print("MATCH!!")
+                    print(m.groupdict())
+                    songdict = m.groupdict()
+                    artist = songdict.get('artist')
+                    title = songdict.get('title')
+                else:
+                    print("No match for (%s)" % title)
+
                 karaokes.append({
                     'vidid': vidid,
+                    'artist':artist.replace('"',"'"),
                     'title': title.replace('"',"'"),
                     'imgurl': imgurl,
                     'vidurl': vidurl,

@@ -8,9 +8,12 @@ function getsinger() {
         url: "{{ url_for('get_singer') }}",
         async: true,
         success: function(data) {
-            console.log("Singer data: " + data);
+            //console.log("Singer data: " + data);
             $('#sidebar').html(data);
             setTimeout(getsinger, 2000);
+        },
+        error: function(data) {
+            setTimeout(getsinger, 10000);
         }
     });
 }
@@ -83,7 +86,8 @@ $.post(
 <div id="user_data"> </div>
     <input type="text" id="song_search" placeholder="Search .." title="Type something">
     <button id="search_button" onclick="search()">Search</button>
-    
+
+
 <div class="data" id="data_loc"> </div>
 
 <h4>Web Results:</h4>

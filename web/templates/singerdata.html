@@ -20,10 +20,10 @@
 </div>
 {% endfor %}
 
-<h3>Completed Songs</h3>
-{% for song in completed %} 
+<h3>Favorite Songs</h3>
+{% for song in favorites %} 
 <div class='grid grid-pad'>
-<a href='#!' onclick='do_queue_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}");'>
+<a href='#!' onclick='do_click_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}", "favorite");'>
 <div class='alink clear'>
 <div class='col-1-4'>
 <div class='content'>
@@ -38,10 +38,12 @@
 </div>
 {% endfor %}
 
-<h3>Suggestions</h3>
+<h3>Suggestions
+<button style="border: none;" onclick="recommend()">&#8634;</button>
+</h3>
 {% for song in recommended %} 
 <div class='grid grid-pad'>
-<a href='#!' onclick='do_queue_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}");'>
+<a href='#!' onclick='do_click_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}", "normal");'>
 <div class='alink clear'>
 <div class='col-1-4'>
 <div class='content'>

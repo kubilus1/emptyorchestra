@@ -1,0 +1,23 @@
+<div class="modal-content">
+<!--<dialog class="song-popup" open>-->
+    {{ song.title }} by
+    {{ song.artist }}
+	<br>
+    {{ song.path }}
+	<br>
+    <button class="fancybutton" onclick='do_queue_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}");'>
+     Queue
+    </button>
+	{% if song.state == "favorite" %}
+    <button class="fancybutton" onclick='drop_favorite("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}");'>
+     Un-Favorite
+    </button>
+    {% else %}
+    <button class="fancybutton" onclick='set_favorite("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}");'>
+     Favorite
+    </button>
+    {% endif %}
+    <button class="fancybutton" onclick='close_dialog();'>Cancel</button>
+<!--</dialog> -->
+
+</div>

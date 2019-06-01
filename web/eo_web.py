@@ -48,6 +48,8 @@ db_lock = threading.RLock()
 RUNNING = True
 PAUSED  = False
 
+CACHE = {}
+
 def local_only(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
@@ -90,18 +92,33 @@ class EoDB(object):
     def close(self):
         self.db.close()
 
-def do_url(url):
+def do_url(url, cache=False):
+    global CACHE
+    if cache:
+        if url in CACHE:
+            return CACHE.get(url)
+
     print "URL:", url
     resp = urllib2.urlopen(url)
     print resp
     data = resp.read()
+
+    if cache:
+        CACHE[url] = data
+
     return data
 
+SEARCH_RE = '^(.*\s*){term}(\s+.*)?$'
 def search_func(val, term):
-    if term.lower() in val.lower():
+    match = re.match(SEARCH_RE.format(term=term), val, re.IGNORECASE)
+    if match:
         return True
     else:
         return False
+    #if term.lower() in val.lower():
+    #    return True
+    #else:
+    #    return False
 
 @app.route('/')
 def index():    
@@ -133,13 +150,8 @@ def get_singer():
         singer = singer_table.get(Query().singer_id == username) or {}
         completed = singer.get('completed',[])
         recommended = singer.get('recommended', [])
+        favorites = singer.get('favorites', [])
 
-        #room = Room.objects(name=session['singroom'])[0]
-        #songs = room.songs
-        #term = ' '.join(similar)
-        #songids = [x.id for x in songs]
-        #recommended = Song.objects(id__in=songids).search_text(term).order_by('$text_score')
-    
     #print("Recommended: %s" % recommended)
     #print("Completed: %s" % completed)
     #print("Songs: %s" % songs)
@@ -148,7 +160,8 @@ def get_singer():
         "singerdata.html",
         queued=songs,
         completed=completed,
-        recommended=recommended
+        recommended=recommended,
+	favorites=favorites
     )
 
 @app.route('/sayit')
@@ -343,6 +356,23 @@ def logout():
     return resp
 
 
+@app.route('/song_dialog')
+def song_dialog():
+    song = {
+        'artist':request.args.get('artist'),
+        'title':request.args.get('title'),
+        'path':request.args.get('path'),
+        'archive':request.args.get('archive'),
+        'duration':request.args.get('duration'),
+	'state':request.args.get('state')
+    }
+
+    return render_template(
+    	'song_dialog.html',
+        song=song
+    )
+    
+
 @app.route('/queue_song/')
 #@app.route('/save_song/')
 #def save_song():
@@ -409,6 +439,7 @@ def queue_song():
         song_qs.setdefault(username, []).append(song_data)
    
     return jsonify({'status':'ok'})
+
 
 @app.route('/show_next/')
 def show_next():
@@ -483,10 +514,6 @@ def wait_song():
         print "No data yet..."
         return jsonify(None)
 
-    #
-    # Going to try to play a song
-    # 
-
 
     #
     # Mark 'completed' songs
@@ -496,67 +523,25 @@ def wait_song():
         # Save the song as 'completed'
         singer_table = db.db.table('singer_table')
         singer = singer_table.get(Query().singer_id == username) or {}
-        completed = singer.get('completed', {}) 
+        completed = singer.get('completed', []) 
         completed_tuple = [ (x.get('artist'), x.get('title')) for x in completed ]
         if (song_data.get('artist'),song_data.get('title')) not in completed_tuple:
             singer.setdefault('completed', []).append({
                 'artist':song_data.get('artist'),
                 'title':song_data.get('title'),
                 'path':song_data.get('path'),
-                'archive':song_data.get('archive')
+                'archive':song_data.get('archive'),
+                'duration':song_data.get('duration')
             })
             singer['singer_id'] = username
             singer_table.upsert(
                 singer,
                 Query().singer_id == username
             )
-    
+   
     #
-    # Get recommendations
-    #
-    #singer = singer_table.get(Query().singer_id == username) or {}
-    recommended = []
-    similar = set()
-    for s in completed:
-        print(s.get('artist'))
-        d = do_url("http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
-            urllib.quote_plus(s.get('artist').strip()),
-            conf.get('LASTFM_KEY')
-        ))
-        print(d)
-        if d:
-            jdata = json.loads(d)
-            similar.update([ x.get('name') for x in
-                jdata.get('similarartists',{}).get('artist',{}) ])
-
-        with song_lock:
-            songs_table = db.db.table('songs')
-
-    for artist in similar: 
-        print("Searching for: %s" % artist)
-        with song_lock:
-            found = songs_table.search(
-                (Query().artist.test(search_func, artist))
-            )
-        
-        for item in found:
-            existing_recs = [ (x.get('artist').lower(), x.get('title').lower()) for x in recommended ]
-            if (item.get('artist').lower(),item.get('title').lower()) not in existing_recs:
-                print("Recommending: %s" % item)
-                recommended.append(item)
-            else:
-                print("Duplicate: %s" % item)
-
-    with song_lock:
-        singer_table = db.db.table('singer_table')
-        singer = singer_table.get(Query().singer_id == username) or {}
-        singer['singer_id'] = username
-        singer['recommended'] = random.sample(recommended, min(len(recommended), 8))
-        singer_table.upsert(
-            singer,
-            Query().singer_id == username
-        )
-
+    # Going to try to play a song
+    # 
     print "Preparing to play:", song_data
     play_type = song_data.get('type')
 
@@ -594,7 +579,9 @@ def wait_song():
 
 @app.route('/local_songs')
 def local_songs():
-    songs = db.db.table('songs').all()
+    with song_lock:
+        songs = db.db.table('songs').all()
+    
     return render_template(
     	'local_songs.html', 
 	songs=sorted(songs, key = lambda i: (i['artist'].lower(), i['title'].lower()))
@@ -730,6 +717,144 @@ def play_song():
     }
     print "VIDURL:", path
     return render_template('karaoke.html', song=song_data)
+
+@app.route('/recommend')
+def recommend(username=None):
+    global db
+
+    #
+    # Get recommendations
+    #
+    
+    if not username:
+        username = request.cookies.get('eoname')
+
+    #singer = singer_table.get(Query().singer_id == username) or {}
+    with song_lock:
+        singer_table = db.db.table('singer_table')
+        singer = singer_table.get(Query().singer_id == username) or {}
+        favorites = singer.get('favorites', []) 
+    
+    recommended = []
+    similar = set()
+    for s in favorites:
+        print(s.get('artist'))
+        d = do_url(
+            "http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
+                urllib.quote_plus(s.get('artist').strip()),
+                conf.get('LASTFM_KEY')
+            ),
+            True
+        )
+        print(d)
+        if d:
+            jdata = json.loads(d)
+            similar.update([ x.get('name') for x in
+                jdata.get('similarartists',{}).get('artist',{}) ])
+
+        with song_lock:
+            songs_table = db.db.table('songs')
+
+    for artist in similar: 
+        print("Searching for: %s" % artist)
+        with song_lock:
+            found = songs_table.search(
+                (Query().artist.test(search_func, artist))
+            )
+        
+        for item in found:
+            existing_recs = [ (x.get('artist').lower(), x.get('title').lower()) for x in recommended ]
+            if (item.get('artist').lower(),item.get('title').lower()) not in existing_recs:
+                print("Recommending: %s" % item)
+                recommended.append(item)
+            else:
+                print("Duplicate: %s" % item)
+
+    with song_lock:
+        singer_table = db.db.table('singer_table')
+        singer = singer_table.get(Query().singer_id == username) or {}
+        singer['singer_id'] = username
+        singer['recommended'] = random.sample(
+            recommended,
+            min(len(recommended), 10)
+        )
+        singer_table.upsert(
+            singer,
+            Query().singer_id == username
+        )
+
+        return jsonify({"ret":"ok"})
+
+
+@app.route('/set_favorite')
+def set_favorite():
+    artist = request.args.get('artist')
+    title = request.args.get('title')
+    path = request.args.get('path')
+    archive = request.args.get('archive')
+    duration = request.args.get('duration')
+    username = request.cookies.get('eoname')
+    song_info = {
+        'artist':artist,
+        'title':title,
+        'path':path,
+        'archive':archive,
+        'duration':duration
+    }
+
+    with song_lock:
+        singer_table = db.db.table('singer_table')
+        singer = singer_table.get(Query().singer_id == username) or {}
+        
+        favorites = singer.get('favorites', [])
+        favorites.append(
+            song_info
+        ) if song_info not in favorites else favorites
+        
+        singer['singer_id'] = username
+        singer['favorites'] = favorites 
+        singer_table.upsert(
+            singer,
+            Query().singer_id == username
+        )
+
+    return jsonify({"ret":"ok"})
+
+
+@app.route('/drop_favorite')
+def drop_favorite():
+    artist = request.args.get('artist')
+    title = request.args.get('title')
+    path = request.args.get('path')
+    archive = request.args.get('archive')
+    duration = request.args.get('duration')
+    username = request.cookies.get('eoname')
+    song_info = {
+        'artist':artist,
+        'title':title,
+        'path':path,
+        'archive':archive,
+        'duration':duration
+    }
+    
+    with song_lock:
+        singer_table = db.db.table('singer_table')
+        singer = singer_table.get(Query().singer_id == username) or {}
+        
+        favorites = singer.get('favorites', [])
+        favorites.remove(
+            song_info
+        ) if song_info in favorites else favorites
+       
+        singer['singer_id'] = username
+        singer['favorites'] = favorites 
+        singer_table.upsert(
+            singer,
+            Query().singer_id == username
+        )
+
+    return jsonify({"ret":"ok"})
+
 
 SONGID_RE = re.compile('(.* - )?(?P<artist>.*) ?- ?(?P<title>.*)\..+')
 def identify_song(filepath):

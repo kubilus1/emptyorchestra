@@ -30,6 +30,14 @@ function skip() {
     });
 }
 
+function recommend() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('recommend') }}",
+        async: true
+    });
+}
+
 function findsongs() {
     $.ajax({
         type: "GET",
@@ -75,12 +83,75 @@ function query() {
     //server.do_web_query(search_term, onWebReturn); 
 }
 
+function set_favorite(artist, title, path, archive, duration) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('set_favorite') }}",
+        data: {
+            'artist':artist,
+            'title':title,
+            'path':path,
+            'archive':archive,
+            'duration':duration
+        },
+        async: true,
+        success: function(data) {
+			close_dialog();
+            recommend();
+        }
+    });
+}
+
+function drop_favorite(artist, title, path, archive, duration) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('drop_favorite') }}",
+        data: {
+            'artist':artist,
+            'title':title,
+            'path':path,
+            'archive':archive,
+            'duration':duration
+        },
+        async: true,
+        success: function(data) {
+			close_dialog();
+            recommend();
+        }
+    });
+}
+
+
+function do_click_song(artist, title, path, archive, duration, state) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('song_dialog') }}",
+        data: {
+            'artist':artist,
+            'title':title,
+            'path':path,
+            'archive':archive,
+            'duration':duration,
+			'state':state
+        },
+        async: true,
+        success: function(data) {
+            $('#dialog').html(data);
+            $('#dialog').css("display", "block");
+        }
+    });
+}
+
+function close_dialog() {
+	$('#dialog').css("display", "none");
+}
+
 function do_queue_song(artist, title, path, archive, duration) {
-    var ret = confirm("Add "+artist+" "+title+" to queue?");
+/*    var ret = confirm("Add "+artist+" "+title+" to queue?");
     if ( ret != true) {
         return;
     }
-
+*/
     $.ajax({
         type: "GET",
         url: "{{ url_for('queue_song') }}",
@@ -95,8 +166,8 @@ function do_queue_song(artist, title, path, archive, duration) {
         success: function(data) {
             console.log("Queueing song success: " + data);
             $('#user_data').html("You chose " + unescape(title) + " next!");
+			close_dialog();
         }
-
     });
    
 }
