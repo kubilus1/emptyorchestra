@@ -739,21 +739,28 @@ def recommend(username=None):
     similar = set()
     for s in favorites:
         print(s.get('artist'))
-        d = do_url(
-            "http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
-                urllib.quote_plus(s.get('artist').strip()),
-                conf.get('LASTFM_KEY')
-            ),
-            True
-        )
-        print(d)
-        if d:
-            jdata = json.loads(d)
-            similar.update([ x.get('name') for x in
-                jdata.get('similarartists',{}).get('artist',{}) ])
+	if conf.get('LASTFM_KEY'):
+            print("Checking LastFM")
+	    d = do_url(
+		"http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
+		    urllib.quote_plus(s.get('artist').strip()),
+		    conf.get('LASTFM_KEY')
+		),
+		True
+	    )
+	    print(d)
+	    if d:
+		jdata = json.loads(d)
+		similar.update([ x.get('name') for x in
+		    jdata.get('similarartists',{}).get('artist',{}) ])
+	else:
+            print("LASTFM_KEY undefined!")
+            artist = s.get('artist').lower().strip()
+            if artist:
+                similar.add(s.get('artist').lower())	
 
-        with song_lock:
-            songs_table = db.db.table('songs')
+    with song_lock:
+	songs_table = db.db.table('songs')
 
     for artist in similar: 
         print("Searching for: %s" % artist)
