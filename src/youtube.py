@@ -1,12 +1,17 @@
 import re
-import urllib
-import urllib2
+try:
+    from urllib2 import urlopen
+    from urllib import quote
+except ModuleNotFoundError:
+    from urllib.request import urlopen
+    from urllib.parse import quote
+
 from bs4 import BeautifulSoup
 
 def do_url(url):
-    print "URL:", url
-    resp = urllib2.urlopen(url)
-    print resp
+    print("URL:", url)
+    resp = urlopen(url)
+    print(resp)
     data = resp.read()
     return data
 
@@ -17,8 +22,8 @@ class yt_api_3(object):
         self.base_url = "https://www.googleapis.com/youtube/v3/search?key=%s&part=snippet" % (APIKEY)
 
     def search(self, term):
-        print "SEARCH TERM:", term
-        youtube_url = "%s&q=%si&maxResults=25" % (self.base_url, urllib.quote("karaoke %s" % term))
+        print("SEARCH TERM:", term)
+        youtube_url = "%s&q=%si&maxResults=25" % (self.base_url, quote("karaoke %s" % term))
         print(youtube_url)
         json_data = do_url(youtube_url)
         data = json.loads(json_data)
@@ -65,7 +70,7 @@ class yt_scrape(object):
         self.base_url = "https://m.youtube.com/results?search_query="
 
     def search(self, term):
-        youtube_url = "%s%s" % (self.base_url, urllib.quote("karaoke %s" % term)) 
+        youtube_url = "%s%s" % (self.base_url, quote("karaoke %s" % term)) 
         print(youtube_url)
         raw_data = do_url(youtube_url)
         soup = BeautifulSoup(raw_data, 'html.parser')

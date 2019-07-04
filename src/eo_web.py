@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, abort
-app = Flask(__name__)
 
 import re
 import os
@@ -11,10 +10,8 @@ import json
 import time
 import shutil
 import urllib
-import urllib2
 import random
 import collections
-import Queue
 from datetime import datetime
 import socket
 import zipfile
@@ -23,6 +20,14 @@ import id3reader
 import pprint
 import threading
 from functools import wraps
+import platform
+
+try:
+    import urllib2
+    import Queue
+except ModuleNotFoundError:
+    from urllib.request import urlopen
+    from queue import Queue
 
 import yaml
 
@@ -34,6 +39,9 @@ from tinydb.middlewares import CachingMiddleware
 
 import youtube
 import webview
+#if platform.system() == 'Windows':
+#    print("Running on Windows.  I'm so sorry.")
+#    webview.config.gui = 'cef'
 
 control_id = None
 retry_song = False
@@ -49,6 +57,17 @@ RUNNING = True
 PAUSED  = False
 
 CACHE = {}
+
+EODIR = os.path.abspath(os.path.expanduser(os.path.join('~', '.emptyorch')))
+
+import emptyorchestra
+PKGDIR = os.path.dirname(os.path.abspath(emptyorchestra.__file__))
+print("PKGDIR: %s" % PKGDIR)
+
+app = Flask(
+    __name__,
+    root_path=PKGDIR
+)
 
 def local_only(f):
     @wraps(f)
@@ -78,7 +97,7 @@ def fix_utf8(instr):
     try:
         return instr.decode('utf-8','ignore').encode('utf-8')
     except UnicodeEncodeError:
-        print "Could not fix (%s)" % instr
+        print("Could not fix (%s)" % instr)
         return instr
 
 class EoDB(object):
@@ -98,9 +117,9 @@ def do_url(url, cache=False):
         if url in CACHE:
             return CACHE.get(url)
 
-    print "URL:", url
-    resp = urllib2.urlopen(url)
-    print resp
+    print("URL:", url)
+    resp = urlopen(url)
+    print(resp)
     data = resp.read()
 
     if cache:
@@ -122,12 +141,12 @@ def search_func(val, term):
 
 @app.route('/')
 def index():    
-    print "READY!"
+    print("READY!")
     username = request.cookies.get('eoname')
-    print "USERNAME:", username
+    print("USERNAME:", username)
     #return render_template('index.html', username=username)
     return render_template(
-    	'sing.html', 
+        'sing.html', 
         username=username
     )
 
@@ -161,7 +180,7 @@ def get_singer():
         queued=songs,
         completed=completed,
         recommended=recommended,
-	favorites=favorites
+        favorites=favorites
     )
 
 @app.route('/sayit')
@@ -171,14 +190,14 @@ def sayit():
 
     message = re.sub(r'[^a-zA-Z0-9 .!,]+', ' ', message)
     tts = gTTS(text=message, lang='en', slow=False)
-    tts.save('./static/sayit.mp3')
+    tts.save(os.path.join(PKGDIR, 'static', 'sayit.mp3'))
     return jsonify({"ret":"okay"})
 
 @app.route('/set_user', methods=['POST'])
 def setUser():
-    print request.form
+    print(request.form)
     username = request.form.get('username')
-    print "POST:", username
+    print("POST:", username)
     #return render_template('index.html', username=username)
     resp = make_response(render_template('sing.html', username=username))
     #resp.set_cookie('eoname', username, max_age=300)
@@ -199,7 +218,7 @@ def all_songs():
     artist_set = set()
 
     for song in songs_table:
-        #print song
+        #print(song)
         song_path = song.get('path')
         if song_path in song_paths:
             # Duplicate path ids not allowed
@@ -244,9 +263,9 @@ def search_local(term=None):
     #global songs
 
     if not term:
-        print "REQUEST:", request.args
+        print("REQUEST:", request.args)
         term = request.args.get('term', "")
-    print "SEARCH TERM:", term
+    print("SEARCH TERM:", term)
 
     global db
     songs_table = db.db.table('songs')
@@ -260,7 +279,7 @@ def search_local(term=None):
 
     #karaokes = [ k for k in songs if term.lower() in k.get('title').lower() or term.lower() in k.get('artist').lower() ]
     
-    print "FOUND:", karaokes
+    print("FOUND:", karaokes)
 
     return render_template('local_results.html', items=karaokes[:50])
 
@@ -269,7 +288,7 @@ def search_local(term=None):
 @app.route('/search_web/<term>')
 def search_web(term=None):
     if not term:
-        #print "REQUEST:", request.args
+        #print("REQUEST:", request.args)
         term = request.args.get('term', "")
 
     yts = youtube.yt_scrape()
@@ -364,11 +383,11 @@ def song_dialog():
         'path':request.args.get('path'),
         'archive':request.args.get('archive'),
         'duration':request.args.get('duration'),
-	'state':request.args.get('state')
+        'state':request.args.get('state')
     }
 
     return render_template(
-    	'song_dialog.html',
+        'song_dialog.html',
         song=song
     )
     
@@ -388,11 +407,11 @@ def queue_song():
     duration = request.args.get('duration')
 
     username = request.cookies.get('eoname')
-    print "Saving ", artist, title, path, archive, username
+    print("Saving ", artist, title, path, archive, username)
 
 
     if archive == 'youtube' and duration:
-        duration = get_vid_duration(duration) + 10000
+        duration = get_vid_duration(duration) + 15000
         play_type = 'youtube_embed'
     elif archive == 'youtube' and duration is None:
         audio = ""
@@ -402,11 +421,11 @@ def queue_song():
         try:
             json_data = do_url(status_url)
             data = json.loads(json_data)
-            print data
+            print(data)
             embed = data.get('items',[{}])[0].get('status',{}).get('embeddable')
             vid_len = data.get('items',[{}])[0].get('contentDetails',{}).get('duration', '')
-            print "EMBED:", embed
-            print "VIDLEN", vid_len
+            print("EMBED:", embed)
+            print("VIDLEN", vid_len)
             duration = get_vid_duration(vid_len) + 5000
         except:
             print("Youtube is being a jerk again.")
@@ -418,13 +437,13 @@ def queue_song():
             play_type = 'youtube'
             #path = 'http://www.youtube.com/watch?v=%s' % path
     elif archive.endswith('.zip'):
-        print "Playing zip."
+        print("Playing zip.")
         play_type = 'cdgzip'
     else:
         play_type = 'cdg'
     
     song_data = {
-    	"username":username,
+        "username":username,
         "artist":artist,
         "title":title,
         "path":path,
@@ -457,8 +476,8 @@ def show_next():
 def karaoke():
     #song_data = song_q.get()
     IP = get_ip()
-    tracks = os.listdir('./static/tracks')
-    images = os.listdir('./static/images')
+    tracks = os.listdir(os.path.join(PKGDIR, 'static', 'tracks'))
+    images = os.listdir(os.path.join(PKGDIR, 'static', 'images'))
     next_images = [ x for x in images if x.startswith('next_') ]
     backgrounds = [ x for x in images if x.startswith('bg_') ]
     kj_images = [ x for x in images if x.startswith('kj_') ]
@@ -483,7 +502,7 @@ def wait_song():
     global retry_song
     global singer_index
 
-    print "Waiting for song request %s" % singer_index
+    print("Waiting for song request %s" % singer_index)
 
     while PAUSED:
         return jsonify(None)
@@ -496,12 +515,12 @@ def wait_song():
     with song_lock:
         q_len = len(song_qs)
     singer_queue = []
-    for i in xrange(q_len):
+    for i in range(q_len):
         if singer_index >= q_len:
             singer_index = 0
 
         with song_lock:
-            singer_queue = song_qs.values()[singer_index]
+            singer_queue = list(song_qs.values())[singer_index]
             singer_index += 1
 
         if len(singer_queue) > 0:
@@ -511,7 +530,7 @@ def wait_song():
         with song_lock:
             song_data = singer_queue.pop(0)
     except IndexError:
-        print "No data yet..."
+        print("No data yet...")
         return jsonify(None)
 
 
@@ -542,16 +561,22 @@ def wait_song():
     #
     # Going to try to play a song
     # 
-    print "Preparing to play:", song_data
+    print("Preparing to play:", song_data)
     play_type = song_data.get('type')
 
     if play_type == 'cdg':
         path = song_data.get('path')
-        print song_data
+        print(song_data)
         filename = os.path.splitext(path)[0]
-        print "FILENAME:", filename
-        shutil.copy("%s.cdg" % filename, "static/play.cdg") 
-        shutil.copy("%s.mp3" % filename, "static/play.mp3") 
+        print("FILENAME:", filename)
+        shutil.copy(
+            "%s.cdg" % filename, 
+            os.path.join(PKGDIR, "static", "play.cdg")
+        )
+        shutil.copy(
+            "%s.mp3" % filename, 
+            os.path.join(PKGDIR, "static" ,"play.mp3")
+        ) 
         song_data['path'] = url_for('static', filename='play.cdg')
         song_data['audio'] = url_for('static', filename='play.mp3')
         #path = "%s.cdg" % filename
@@ -564,13 +589,19 @@ def wait_song():
         z.extractall()
 
         filename = os.path.splitext(path)[0]
-        print "FILENAME:", filename
-        shutil.move("%s.cdg" % filename, "static/play.cdg") 
-        shutil.move("%s.mp3" % filename, "static/play.mp3") 
+        print("FILENAME:", filename)
+        shutil.move(
+            "%s.cdg" % filename, 
+            os.path.join(PKGDIR, "static", "play.cdg")
+        ) 
+        shutil.move(
+            "%s.mp3" % filename, 
+            os.path.join(PKGDIR, "static" ,"play.mp3")
+        )
         song_data['path'] = url_for('static', filename='play.cdg')
         song_data['audio'] = url_for('static', filename='play.mp3')
 
-    print "Got a song request! :", song_data
+    print("Got a song request! :", song_data)
     #return render_template('player.html', song=song_data)
     with song_lock:
         last_song = song_data
@@ -583,8 +614,8 @@ def local_songs():
         songs = db.db.table('songs').all()
     
     return render_template(
-    	'local_songs.html', 
-	songs=sorted(songs, key = lambda i: (i['artist'].lower(), i['title'].lower()))
+        'local_songs.html', 
+        songs=sorted(songs, key = lambda i: (i['artist'].lower(), i['title'].lower()))
     )
 
 @app.route('/control')
@@ -592,9 +623,9 @@ def local_songs():
 def control():
     global song_qs
     global singer_index
-    print "Qs:", song_qs
+    print("Qs:", song_qs)
     return render_template(
-    	'control.html',
+        'control.html',
         song_qs=song_qs,
         singer_idx=singer_index
     )
@@ -605,8 +636,16 @@ def play_pause():
     global PAUSED
     if PAUSED:
         PAUSED = False
+        webview.evaluate_js(
+            'sound_play();',
+            uid='master'
+        )
     else:
         PAUSED = True
+        webview.evaluate_js(
+            'sound_pause();',
+            uid='master'
+        )
     return jsonify({"ret":"ok"})
 
 @app.route('/skip_song')
@@ -634,9 +673,23 @@ def play_youtube():
     sleep_seconds = (int(song_data.get('duration')/1000))
     print("About to play: %s" % youtube_url)
     webview.load_url(youtube_url)
-    print("Will wait for %s ..." % sleep_seconds)
-    time.sleep(sleep_seconds)
+    time.sleep(5)
+    url = webview.get_current_url(uid='master')
+    #print("Will wait for %s ..." % sleep_seconds)
+    #time.sleep(sleep_seconds)
+    cur_url = webview.get_current_url(uid='master')
+    while cur_url == url:
+        time.sleep(2)
+        print("Still playing.")
+        cur_url = webview.get_current_url(uid='master')
+
+    print("URL changed, song is complete.")
     webview.load_url("http://127.0.0.1:5000/karaoke")
+    time.sleep(1)
+    webview.evaluate_js(
+        'song_end(%s);' % jsonify(song_data),
+        uid='master'
+    )
     return jsonify({"ret":"ok"})
 
 
@@ -650,11 +703,11 @@ def add_song():
     path = request.args.get('path')
     archive = request.args.get('archive')
    
-    print "Adding: %s | %s | %s" % (
+    print("Adding: %s | %s | %s" % (
         artist,
         title,
         path
-    )
+    ))
     asong = {
         'artist':fix_utf8(artist),
         'title':fix_utf8(title),
@@ -676,22 +729,22 @@ def play_song():
     archive = request.args.get('archive')
     username = request.cookies.get('eoname')
 
-    print "ARCHIVE TYPE:", archive
-    print "PATH:", path
-    print "TITLE:", title
+    print("ARCHIVE TYPE:", archive)
+    print("PATH:", path)
+    print("TITLE:", title)
 
     if archive == 'youtube':
         play_type = 'youtube'
         audio = ""
     elif archive.endswith('.zip'):
-        print "Playing zip."
+        print("Playing zip.")
         play_type = 'cdg'
         z = zipfile.ZipFile(archive)
         z.extractall()
 
         filename = os.path.splitext(path)[0]
-        print "FILENAME:", filename
-        shutil.copy("%s.cdg" % filename, "static/play.cdg") 
+        print("FILENAME:", filename)
+        shutil.copy("%s)cdg" % filename, "static/play.cdg") 
         shutil.copy("%s.mp3" % filename, "static/play.mp3") 
         path = url_for('static', filename='play.cdg')
         audio = url_for('static', filename='play.mp3')
@@ -700,7 +753,7 @@ def play_song():
         play_type = 'cdg'
         #filename = "karaoke/The\ Doors/The\ Doors\ -\ Five\ To\ One"
         filename = os.path.splitext(path)[0]
-        print "FILENAME:", filename
+        print("FILENAME:", filename)
         shutil.copy("%s.cdg" % filename, "static/play.cdg") 
         shutil.copy("%s.mp3" % filename, "static/play.mp3") 
         #path = urllib.quote("karaoke/The\ Doors/The\ Doors\ -\ Five\ To\ One.cdg")
@@ -715,7 +768,7 @@ def play_song():
         "audio":audio,
         "timestamp":time.time()
     }
-    print "VIDURL:", path
+    print("VIDURL:", path)
     return render_template('karaoke.html', song=song_data)
 
 @app.route('/recommend')
@@ -739,28 +792,28 @@ def recommend(username=None):
     similar = set()
     for s in favorites:
         print(s.get('artist'))
-	if conf.get('LASTFM_KEY'):
+        if conf.get('LASTFM_KEY'):
             print("Checking LastFM")
-	    d = do_url(
-		"http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
-		    urllib.quote_plus(s.get('artist').strip()),
-		    conf.get('LASTFM_KEY')
-		),
-		True
-	    )
-	    print(d)
-	    if d:
-		jdata = json.loads(d)
-		similar.update([ x.get('name') for x in
-		    jdata.get('similarartists',{}).get('artist',{}) ])
-	else:
+            d = do_url(
+                "http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
+                    urllib.quote_plus(s.get('artist').strip()),
+                    conf.get('LASTFM_KEY')
+                ),
+                True
+            )
+            print(d)
+            if d:
+                jdata = json.loads(d)
+                similar.update([ x.get('name') for x in
+                    jdata.get('similarartists',{}).get('artist',{}) ])
+        else:
             print("LASTFM_KEY undefined!")
             artist = s.get('artist').lower().strip()
             if artist:
-                similar.add(s.get('artist').lower())	
+                similar.add(s.get('artist').lower())    
 
     with song_lock:
-	songs_table = db.db.table('songs')
+        songs_table = db.db.table('songs')
 
     for artist in similar: 
         print("Searching for: %s" % artist)
@@ -883,11 +936,11 @@ def identify_song(filepath):
             title = songdict.get('title')
 
     if not artist or not title:
-        print "-----"
-        print "Failed for:"
-        print filepath
-        print artist
-        print title
+        print("-----")
+        print("Failed for:")
+        print(filepath)
+        print(artist)
+        print(title)
 
     if not title:
         f, e = os.path.splitext(songfile)
@@ -911,8 +964,8 @@ def findKaraokes(kpath):
     else:
         last_scantime = result.get('value')
 
-    print "KARAOKE_PATH:", kpath
-    print "Finding karaokes..."
+    print("KARAOKE_PATH:", kpath)
+    print("Finding karaokes...")
     for root, dirs, files in os.walk(kpath):
 
         if not RUNNING:
@@ -920,10 +973,10 @@ def findKaraokes(kpath):
 
         cur_mtime = os.stat(root)[stat.ST_MTIME]
         if cur_mtime <= last_scantime:
-            print "Nothing changed for %s" % root
+            print("Nothing changed for %s" % root)
             continue
 
-        print "%s changed, scanning" % root
+        print("%s changed, scanning" % root)
 
         karaokes = []
         for f in files:
@@ -932,7 +985,7 @@ def findKaraokes(kpath):
 
                 songfile = os.path.join(root, "%s.mp3" % filename)
                 if not os.path.isfile(songfile):
-                    print "%s does not exist, skipping" % songfile
+                    print("%s does not exist, skipping" % songfile)
                     continue
                 #artist = os.path.basename(root)
                 #title = f
@@ -954,12 +1007,12 @@ def findKaraokes(kpath):
                 karaokes.append(asong)
             elif ext.lower() in ['.zip']:
                 zippath = os.path.join(root, f)
-                #print "Checking:", zippath
+                #print("Checking:", zippath)
                 try:
                     z = zipfile.ZipFile(zippath)
                     ziplist =  z.namelist()
                 except zipfile.BadZipfile:
-                    print "BAD zip file:", zippath
+                    print("BAD zip file:", zippath)
                     continue
                 for f in ziplist:
                     filename, ext = os.path.splitext(f)
@@ -968,7 +1021,7 @@ def findKaraokes(kpath):
                     )
                     if ext.lower() in ['.cdg']:
                         #artist = os.path.basename(root)
-                        #print "Zip found:", zippath, f
+                        #print("Zip found:", zippath, f)
                         asong = {
                             'artist':fix_utf8(artist),
                             'title':title,
@@ -982,14 +1035,14 @@ def findKaraokes(kpath):
         with song_lock:
             # Clear the directory for re-scanning
             songs_table.remove(Query().directory == root)
-            print "Inserting: %s" % len(karaokes)
+            print("Inserting: %s" % len(karaokes))
             try:
                 songs_table.insert_multiple(karaokes)
             except OverflowError:
-                print "Error with: "
-                print pprint.pprint(karaokes)
+                print("Error with: ")
+                print(pprint.pprint(karaokes))
                 for k in karaokes:
-                    print "Trying: (%s)" % k
+                    print("Trying: (%s)" % k)
                     songs_table.insert(k)
                 #return 
 
@@ -998,7 +1051,7 @@ def findKaraokes(kpath):
             {"key":"mtime","value":time.time()},
             Query().key == "mtime"
         )
-    print "FOUND:", len(songs_table)
+    print("FOUND:", len(songs_table))
 
     #fix_songdb()
 
@@ -1021,9 +1074,9 @@ def fix_songdb():
     intersect = artists & titles
 
     for artist in intersect:
-        print "ARTIST:", artist
+        print("ARTIST:", artist)
         songs = song_table.search(Query().title.test(search_func, artist))
-        print "Need to update:", songs
+        print("Need to update:", songs)
 
 
 def run_it():
@@ -1049,26 +1102,37 @@ def get_folder():
 def check_health():
     global RUNNING
 
+    time.sleep(30)
     while RUNNING:
         if not webview.window_exists(uid='master'):
             RUNNING=False
-        time.sleep(1)
+        time.sleep(2)
 
     print("Main window no longer running.")
     webview.destroy_window(uid=control_id)
-    
-if __name__ == "__main__":
+   
+
+def main():
     global song_qs
     global singer_index 
     global songs
     global db
     global conf
 
-    with open('eo_conf.yml') as h:
+    if not os.path.isdir(EODIR):
+        os.makedirs(EODIR)
+
+    conf_path = os.path.join(EODIR, 'eo_conf.yml')
+    if not os.path.isfile(conf_path):
+        shutil.copy(
+            os.path.join(PKGDIR, 'eo_conf.yml'),
+            conf_path
+        )
+
+    with open(conf_path) as h:
         conf = yaml.load(h)
 
-
-    db = EoDB('eo.tdb')
+    db = EoDB(os.path.join(EODIR, 'eo.tdb'))
     conf_table = db.db.table('conf')
 
     #kpath = "/media/nas/karaoke"
@@ -1107,10 +1171,13 @@ if __name__ == "__main__":
         )
         print("Main window exited.")
     except KeyboardInterrupt:
-        print "Exiting"
+        print("Exiting")
     finally:
         global RUNNING
         RUNNING = False
         webview.destroy_window(uid=control_id)
         #scan_t.join(30)
         db.close()
+
+if __name__ == "__main__":
+    main()

@@ -60,6 +60,7 @@ function randomChoice(arr) {
     return arr[Math.floor(arr.length * Math.random())];
 }
 
+
 function onLoad(data) {
     console.log("On Load...");
     
@@ -213,6 +214,26 @@ function bumper_stop() {
     player.pause();
     player.src = player.src;
 }
+function sound_pause() {
+    var bg_player = document.getElementById('bumpsong');
+	var cdg_player = document.getElementById('song');
+    if (cdg_player != null) {
+        cdg_player.pause();
+    }
+    if (bg_player != null) {
+        bg_player.pause();
+    }
+}
+function sound_play() {
+    var bg_player = document.getElementById('bumpsong');
+	var cdg_player = document.getElementById('song');
+    if (cdg_player != null) {
+        cdg_player.play();
+    }
+    if (bg_player != null) {
+        bg_player.play();
+    }
+}
 
 function resize_cdg() {
     var width = window.innerWidth * 0.8;
@@ -332,14 +353,14 @@ function do_wait_song() {
 
     $.ajax({
         type: "GET",
-        url: "{{ url_for('wait_song') }}",
+        url: "{{ url_for('wait_song') }}?rand="+Math.random(),
         async: true,
         success: function(data) {
             //$('#play_cdg').html(data);
             if (data != null) {
                 $.ajax({
                     type: "GET",
-                    url: "{{ url_for('show_next') }}",
+                    url: "{{ url_for('show_next') }}?rand="+Math.random(),
                     async: true,
                     success: function(data) {
                         console.log("Show next:");
@@ -348,6 +369,9 @@ function do_wait_song() {
                         $('#queue').show();
                     }
                 });
+
+                console.log("Play song success: ");
+                console.log(data);
 
                 var bground = randomChoice({{ next_images | safe }});
                 $('body').css({background : '#111111 url(/static/images/'+bground+') no-repeat fixed center / auto 100%'});
@@ -359,31 +383,30 @@ function do_wait_song() {
                 saykj = saykj + ".  " + data.username+", step on UP!";
                 say(saykj);
 
+                if (data.type == 'youtube_embed') {
+                    setTimeout(function() {youtube_embed(data);}, 12000);
+                } else if (data.type == 'youtube') {
+                    setTimeout(function() {youtube_window(data);}, 12000);
+                } else if (data.type == 'cdg' ){
+                    setTimeout(function() {cdg_player(data);}, 12000);
+                } else if (data.type == 'cdgzip' ){
+                    setTimeout(function() {cdg_player(data);}, 12000);
+                } else {
+                    console.log("Not recognized format: " + data.type);
+                    setTimeout(function() {do_wait_song();}, 5000);
+                }
             } else {
                 $('#KJ').html("<h2>Soooo, who's next?</h2>");
                 setTimeout(function() {do_wait_song();}, 5000);
-                return;
             }
             
-            console.log("Play song success: ");
-            console.log(data);
-
-            if (data.type == 'youtube_embed') {
-                setTimeout(function() {youtube_embed(data);}, 12000);
-            } else if (data.type == 'youtube') {
-                setTimeout(function() {youtube_window(data);}, 12000);
-            } else if (data.type == 'cdg' ){
-                setTimeout(function() {cdg_player(data);}, 12000);
-            } else if (data.type == 'cdgzip' ){
-                setTimeout(function() {cdg_player(data);}, 12000);
-            } else {
-                console.log("Not recognized format: " + data.type);
-                setTimeout(function() {do_wait_song();}, 5000);
-            }
         },
-      complete: function() {
-          console.log("COMPLETE");
-      }
+        complete: function() {
+            console.log("COMPLETE");
+        },
+        error: function() {
+            setTimeout(function() {do_wait_song();}, 5000);
+        }
     });
 
     $('#cdg_player').hide();
