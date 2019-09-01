@@ -1,0 +1,37 @@
+dist: bionic
+language: python
+branches:
+  only:
+    - master
+    - /^\d+\.\d+(\.\d+)?(-\S*)?$/
+services:
+  - docker
+
+
+before_install:
+  - docker pull ubuntu:bionic
+
+jobs:
+  include:
+  - stage: setup
+    script:
+    - pwd
+    - ls ../
+  - stage: build
+    script:
+     - make
+  - stage: release to github
+    script: 
+    - echo "Deploying to github..."
+    - make dist/eo.pex
+    if: tag IS present
+    deploy:
+      provider: releases
+      api_key: "$GITHUB_OAUTH_TOKEN"
+      skip_cleanup: true
+      file_glob: true
+      file:
+        - dist/eo.*
+      on:
+        tags: true
+        repo: kubilus1/emptyorchestra
