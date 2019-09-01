@@ -9,7 +9,6 @@ import glob
 import json
 import time
 import shutil
-import urllib
 import random
 import collections
 from datetime import datetime
@@ -25,9 +24,11 @@ import platform
 try:
     import urllib2
     import Queue
+    from urllib import quote
 except ModuleNotFoundError:
     from urllib.request import urlopen
     from queue import Queue
+    from urllib.parse import quote_plus
 
 import yaml
 
@@ -48,7 +49,7 @@ retry_song = False
 last_song = None
 song_qs = None
 songs = None
-singer_index = None
+singer_index = 1
 db = None
 conf = None 
 song_lock = threading.RLock()
@@ -181,6 +182,53 @@ def get_singer():
         completed=completed,
         recommended=recommended,
         favorites=favorites
+    )
+
+@app.route('/get_all_singers')
+@local_only
+def get_all_singers():
+    global song_qs
+    global singer_index
+    print("Qs:", song_qs)
+    max_singers = len(song_qs)
+    cur_singer=None
+    if len(song_qs):
+        #cur_singer = list(song_qs.keys())[singer_index-1]
+        cur_singer = last_song.get('username')
+
+    next_idx = singer_index + 1
+    if next_idx > len(song_qs):
+        next_idx = 1
+
+    next_singer=None
+    if len(song_qs):
+        next_singer = list(song_qs.keys())[next_idx-1]
+
+    return render_template(
+        'all_singers.html',
+        song_qs=song_qs,
+        singer_idx=singer_index,
+        next_idx=next_idx,
+        next_singer=next_singer,
+        max_singers=max_singers,
+        cur_song=last_song,
+        cur_singer=cur_singer
+    )
+
+@app.route('/set_singer_idx')
+@local_only
+def set_singer_idx():
+    global singer_index
+    idx = request.args.get('idx')
+    # This returned the next_index so subtract one
+    singer_index = int(idx) - 1
+    update_singers()
+    return '{"ret":"ok"}'
+
+def update_singers():
+    webview.evaluate_js(
+        'getsingers();',
+        uid=control_id
     )
 
 @app.route('/sayit')
@@ -330,6 +378,7 @@ def unqueue_song():
     with song_lock:
         song_qs[username] = new_songs
 
+    update_singers()
     return '{"ret":"ok"}'
 
 @app.route('/queue_up/')
@@ -343,6 +392,7 @@ def queue_up():
         if idx > 0:
             songs.insert(idx-1, songs.pop(idx))
 
+    update_singers()
     return '{"ret":"ok"}'
 
 @app.route('/queue_down/')
@@ -355,6 +405,7 @@ def queue_down():
         songs = song_qs.get(username, [])
         songs.insert(idx+1, songs.pop(idx))
 
+    update_singers()
     return '{"ret":"ok"}'
 
 
@@ -457,6 +508,7 @@ def queue_song():
     with song_lock:
         song_qs.setdefault(username, []).append(song_data)
    
+    update_singers()
     return jsonify({'status':'ok'})
 
 
@@ -606,6 +658,7 @@ def wait_song():
     with song_lock:
         last_song = song_data
     
+    update_singers()
     return jsonify(song_data)
 
 @app.route('/local_songs')
@@ -683,7 +736,7 @@ def play_youtube():
         print("Still playing.")
         cur_url = webview.get_current_url(uid='master')
 
-    print("URL changed, song is complete.")
+    print("URL changed (%s != %s), song is complete." % (url, cur_url))
     webview.load_url("http://127.0.0.1:5000/karaoke")
     time.sleep(1)
     webview.evaluate_js(
@@ -796,21 +849,21 @@ def recommend(username=None):
             print("Checking LastFM")
             d = do_url(
                 "http://ws.audioscrobbler.com/2.0/?method=artist.getSimilar&artist=%s&api_key=%s&format=json&limit=5&autocorrect=1" % (
-                    urllib.quote_plus(s.get('artist').strip()),
+                    quote_plus(s.get('artist').strip()),
                     conf.get('LASTFM_KEY')
                 ),
                 True
             )
-            print(d)
             if d:
                 jdata = json.loads(d)
                 similar.update([ x.get('name') for x in
                     jdata.get('similarartists',{}).get('artist',{}) ])
         else:
             print("LASTFM_KEY undefined!")
-            artist = s.get('artist').lower().strip()
-            if artist:
-                similar.add(s.get('artist').lower())    
+
+        artist = s.get('artist').lower().strip()
+        if artist:
+            similar.add(s.get('artist').lower())    
 
     with song_lock:
         songs_table = db.db.table('songs')

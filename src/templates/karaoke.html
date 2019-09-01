@@ -384,13 +384,13 @@ function do_wait_song() {
                 say(saykj);
 
                 if (data.type == 'youtube_embed') {
-                    setTimeout(function() {youtube_embed(data);}, 12000);
+                    setTimeout(function() {youtube_embed(data);}, 15000);
                 } else if (data.type == 'youtube') {
-                    setTimeout(function() {youtube_window(data);}, 12000);
+                    setTimeout(function() {youtube_window(data);}, 15000);
                 } else if (data.type == 'cdg' ){
-                    setTimeout(function() {cdg_player(data);}, 12000);
+                    setTimeout(function() {cdg_player(data);}, 15000);
                 } else if (data.type == 'cdgzip' ){
-                    setTimeout(function() {cdg_player(data);}, 12000);
+                    setTimeout(function() {cdg_player(data);}, 15000);
                 } else {
                     console.log("Not recognized format: " + data.type);
                     setTimeout(function() {do_wait_song();}, 5000);

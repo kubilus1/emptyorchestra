@@ -2,6 +2,22 @@
 {% block head %}
   {{ super() }}
 <script type="text/javascript"> 
+function getsingers() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('get_all_singers') }}",
+        async: true,
+        success: function(data) {
+            //console.log("Singer data: " + data);
+            $('#sidebar').html(data);
+            setTimeout(getsinger, 2000);
+        },
+        error: function(data) {
+            setTimeout(getsinger, 10000);
+        }
+    });
+}
+
 </script>
 {% endblock %}
 
@@ -17,21 +33,6 @@
 <button onclick="findsongs()">Find songs</button>
 <button onclick="fullscreen()">Fullscreen</button>
 
-singer index: {{ singer_idx }}
-<ol>
-{% for k,v in song_qs.items() %}
-<li>
-    {% if loop.index0 == (singer_idx-1) %}<b>*{% endif %}
-    {{ k }}
-    {% if loop.index0 == (singer_idx-1) %}</b>{% endif %}
-<ol>
-    {% for song in v %}
-        <li>{{ song.arist }} - {{ song.title }} - {{ song.path }}</li>
-    {% endfor %}
-</ol>
-</li>
-{% endfor %}
-</ol>
 
 <br><br>
     <!--<input type="text" id="song_search" onkeyup="search()" placeholder="Search .." title="Type something">-->
@@ -45,6 +46,8 @@ singer index: {{ singer_idx }}
 {% endblock %}
 
 {% block onload %}
+getsingers();
+
 $('#song_search').keypress(function(event) {
 	var keycode = (event.keyCode ? event.keyCode : event.which);
     if(keycode == '13'){

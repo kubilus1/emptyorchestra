@@ -46,6 +46,17 @@ function findsongs() {
     });
 }
 
+function set_singer_idx() {
+    var idx = document.getElementById('singer_idx').value;
+
+    $.ajax({
+        type: "GET",
+        data: { 'idx': idx },
+        url: "{{ url_for('set_singer_idx') }}",
+        async: true
+    });
+}
+
 function manual_queue() {
     var title = document.getElementById('title').value; 
     var song_id = document.getElementById('song_id').value; 
