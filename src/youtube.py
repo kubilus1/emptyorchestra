@@ -2,7 +2,7 @@ import re
 try:
     from urllib2 import urlopen
     from urllib import quote
-except ModuleNotFoundError:
+except ImportError:
     from urllib.request import urlopen
     from urllib.parse import quote
 
