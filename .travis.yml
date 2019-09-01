@@ -19,7 +19,7 @@ jobs:
     - ls ../
   - stage: build
     script:
-     - make
+     - make dist/eo.pex
   - stage: release to github
     script: 
     - echo "Deploying to github..."

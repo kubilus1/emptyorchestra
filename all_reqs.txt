@@ -5,3 +5,4 @@ pywebview == 2.4
 gTTS==2.0.1
 xmltodict
 pyyaml
+pygobject
