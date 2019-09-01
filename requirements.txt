@@ -1,7 +1,8 @@
 tinydb >= 3.7
 #ujson
 Flask >= 0.12
-pywebview
+pywebview == 2.4
 gTTS==2.0.1
 xmltodict
 pyyaml
+pygobject

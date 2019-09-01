@@ -15,7 +15,6 @@ from datetime import datetime
 import socket
 import zipfile
 import webbrowser
-import id3reader
 import pprint
 import threading
 from functools import wraps
@@ -38,7 +37,6 @@ from tinydb import TinyDB, Query
 from tinydb.storages import JSONStorage, MemoryStorage
 from tinydb.middlewares import CachingMiddleware
 
-import youtube
 import webview
 #if platform.system() == 'Windows':
 #    print("Running on Windows.  I'm so sorry.")
@@ -62,6 +60,8 @@ CACHE = {}
 EODIR = os.path.abspath(os.path.expanduser(os.path.join('~', '.emptyorch')))
 
 import emptyorchestra
+from emptyorchestra import id3reader
+from emptyorchestra import youtube
 PKGDIR = os.path.dirname(os.path.abspath(emptyorchestra.__file__))
 print("PKGDIR: %s" % PKGDIR)
 
