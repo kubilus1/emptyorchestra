@@ -25,7 +25,7 @@ try:
     import urllib2
     import Queue
     from urllib import quote
-except ModuleNotFoundError:
+except ImportError:
     from urllib.request import urlopen
     from queue import Queue
     from urllib.parse import quote_plus
