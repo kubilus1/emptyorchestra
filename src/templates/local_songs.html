@@ -1,0 +1,23 @@
+<table id="song_table">
+    <tr class="song_header">
+        <th style="width:60%">Artist</th>
+        <th style="width:40%">Title</th>
+    </tr>
+    {% set ns = namespace(start_letter="0-9") %}
+    <tr expand=0 onclick='expand_collapse(this, "0-9");'>
+        <td colspan=2 idx="0-9" class="collapsible">0-9</td>
+    </tr>
+    {% for song in songs %}
+    {% if not song.artist[0] is in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'] %}
+    {% elif song.artist[0]|upper != ns.start_letter|upper %}
+        {% set ns.start_letter=song.artist[0] %}
+        <tr expand=0 onclick='expand_collapse(this, "{{ song.artist[0] }}");'>
+            <td colspan=2 idx="{{ song.artist[0]|upper }}" class="collapsible">{{ song.artist[0]|upper }}</td>
+        </tr>
+    {% endif %}
+    <tr expand=0 class="collapsed row_{{ ns.start_letter }}" idx="{{ ns.start_letter|upper }}" onclick='do_click_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "normal");'>
+        <td style="width:60%" idx="{{ ns.start_letter|upper }}">{{ song.artist }}</td>
+        <td style="width:40%" idx="{{ ns.start_letter|upper }}">{{ song.title }}</td>
+    </tr>
+    {% endfor %}
+</table>

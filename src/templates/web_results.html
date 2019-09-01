@@ -1,0 +1,27 @@
+{% for song in items %}
+<div class='grid grid-pad'>
+    <a href='#!' onclick='do_click_song("{{ song.artist }}", "{{ song.title }}", "{{ song.vidid }}", "youtube", "{{ song.duration }}");'>
+<div class='alink clear'>
+<div class='col-1-4'>
+<div class='content'>
+    {{ song.artist }}
+</div></div>
+<div class='col-1-4'>
+<div class='content'>
+    {{ song.title }}
+</div></div>
+
+<div class='col-1-4'>
+<div class='content'>
+    {{ song.duration }}
+</div></div>
+
+<div class='col-1-4'>
+<div class='content'>
+    <img src={{ song.imgurl }} />
+</div></div>
+
+</div>
+</a>
+</div>
+{% endfor %}

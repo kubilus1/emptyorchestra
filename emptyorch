@@ -1,10 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env python
 
-EODIR=$(python -c "from emptyorchestra import emptyorch; import os; print os.path.dirname(emptyorch.__file__)")
-ORIGDIR=$(pwd)
-
-echo "EODIR $EODIR"
-
-cd ${EODIR}
-python emptyorch.py
-cd ${ORIGDIR} 
+from emptyorchestra import eo_web
+eo_web.main()

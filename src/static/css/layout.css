@@ -1,0 +1,117 @@
+* {
+  box-sizing: border-box;
+}
+
+#song_search {
+  background-image: url('/static/css/searchicon.png');
+  background-position: 10px 10px;
+  background-repeat: no-repeat;
+  width: 80%;
+  font-size: 16px;
+  padding: 12px 20px 12px 40px;
+  border: 1px solid #ddd;
+  margin-bottom: 12px;
+}
+
+#search_button {
+  font-size: 16px;
+  padding: 12px 10px 12px 10px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+}
+
+#song_table {
+  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid #ccc;
+  font-size: 18px;
+  bgcolor: #eee;
+}
+
+#song_table th, #song_table td {
+  text-align: left;
+  padding: 12px;
+}
+
+#song_table tr {
+  border-bottom: 1px solid #ddd;
+}
+
+#song_table tr.header, #song_table tr:hover {
+  background-color: #f8f8f8;
+}
+
+
+.collapsible {
+  background-color: #777;
+  color: white;
+  cursor: pointer;
+  padding: 5px;
+  /*width: 10%;*/
+  border: none;
+  text-align: left;
+  outline: none;
+  font-size: 15px;
+}
+
+.active, .collapsible:hover {
+  background-color: #555;
+}
+
+.collapsed {
+  display: none;
+  /*padding: 0 18px;
+  overflow: hidden;
+  background-color: #f1f1f1;*/
+}
+
+.modal-content {
+
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+ /*   position: fixed;
+    z-index: 1;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+*/
+}
+
+
+
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.fancybutton {
+	border: none;
+}
+
+@media handheld, only screen and (max-width: 767px) {
+    #song_table {
+        border-collapse: collapse;
+        width: 100%;
+        border: 1px solid #ccc;
+        font-size: 18px;
+        bgcolor: #eee;
+        max-width: 760px;
+        table-layout: fixed;
+    }
+    #song_table th, #song_table td {
+        text-align: left;
+        padding: 12px;
+        word-wrap:break-word
+    }
+
+}

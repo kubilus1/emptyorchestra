@@ -1,0 +1,120 @@
+/*.center {
+margin-left:auto;
+margin-right:auto;
+}*/
+
+.centered {
+  /*position: fixed;
+  position: fixed;
+  top: 50%;
+  transform: translate(0%, -50%);
+  top: 50%;
+  left: 50%;*/
+  /* bring your own prefixes */
+  /*transform: translate(-50%, -50%);*/
+      /*left: 50%;*/
+      /* bring your own prefixes */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.hcenter {
+  /*width:80%; margin-left:calc(10%);*/
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.player {
+  margin: auto;
+  /*height: 768px;
+  width: 1024px;*/
+}
+
+h2 {
+color:#32CD32;
+font-size:3vw;
+padding:3px;
+text-shadow: -1px 0 #444, 0 1px #444, 1px 0 #444, 0 -1px #444;
+
+}
+h3 {
+color:#32CD32;
+font-size:2vw;
+padding:3px;
+text-shadow: -1px 0 #444, 0 1px #444, 1px 0 #444, 0 -1px #444;
+
+}
+h4 {
+font-size:medium;
+margin:5px;
+text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+body {
+    font-family: 'Luckiest Guy', cursive;
+
+	/*text-shadow: -1px 0 #444, 0 1px #444, 1px 0 #444, 0 -1px #444;*/
+    padding:20px;
+    margin: auto;
+    /*border:1px solid #DDDDDD;*/
+    background-color: #EEEEEF;
+    /*background-image:url('/site_media/images/gear.png');*/
+    /*background-repeat:no-repeat;*/
+    background-image:url('/static/images/paper1.jpeg');
+    /*max-width: 1024px;*/
+	min-width: 1024px;
+    /*width:75%;
+    display:block;*/
+}
+
+.centerish {
+	padding-left: 20%;
+}
+
+.header {
+    position: fixed;
+    top: 0;
+	left: 0;
+    background-color: #DDDDFF;
+    max-width: 1024px;
+    width:100%;
+}
+A{ font-family: arial; color: #808080; background: #DADADA}
+A:link   { text-decoration: none; }
+A:visited    { text-decoration: none; }
+A:active     { text-decoration: none; color: #FF911B;}
+A:hover  { text-decoration: none; color: #FF911B;}
+
+.alink {
+    color: #444444;
+    background: #DADADA;
+    padding: 20px;
+    border:1px solid #DDDDDD;
+}
+
+.clear:after {
+    clear: both;
+    content: "";
+    display: table;
+}
+canvas {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 50%;
+    margin-right: auto;
+    margin-top: 20%;
+    margin-bottom: auto;
+    display: block;
+	/*transform: translate(-30%, 10%);*/
+	/*transform: translate(50%, 0%);*/
+    image-rendering: optimizeSpeed;             // Older versions of FF
+    image-rendering: -moz-crisp-edges;          // FF 6.0+
+    image-rendering: -webkit-optimize-contrast; // Webkit (non standard naming)
+    image-rendering: -o-crisp-edges;            // OS X & Windows Opera (12.02+)
+    image-rendering: crisp-edges;               // Possible future browsers.
+    -ms-interpolation-mode: nearest-neighbor;   // IE (non standard naming)
+}

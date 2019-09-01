@@ -1,0 +1,20 @@
+{% for song in items %} 
+<div class='grid grid-pad'>
+<a href='#!' onclick='do_queue_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}");'>
+<div class='alink clear'>
+<div class='col-1-3'>
+<div class='content'>
+    {{ song.artist }}
+</div></div>
+<div class='col-1-3'>
+<div class='content'>
+    {{ song.title }}
+</div></div>
+<div class='col-1-3'>
+<div class='content'>
+    {{ song.filename }}
+</div></div>
+</div>
+</a>
+</div>
+{% endfor %}

@@ -1,0 +1,20 @@
+{% if song_qs|length > 0 %}
+<h3> 
+On deck:
+
+<ol>
+{% for k,v in song_qs.items() %}
+<li>
+    {% if loop.index0 == (singer_idx-1) %}<b>*{% endif %}
+    {{ k }}
+    {% if loop.index0 == (singer_idx-1) %}</b>{% endif %}
+<ol>
+    {% for song in v %}
+        <li>{{ song.arist }} - {{ song.title }} - {{ song.path }}</li>
+    {% endfor %}
+</ol>
+</li>
+{% endfor %}
+</ol>
+</h3>
+{% endif %}

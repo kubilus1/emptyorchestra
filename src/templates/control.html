@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+{% block head %}
+  {{ super() }}
+<script type="text/javascript"> 
+function getsingers() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('get_all_singers') }}",
+        async: true,
+        success: function(data) {
+            //console.log("Singer data: " + data);
+            $('#sidebar').html(data);
+            setTimeout(getsinger, 2000);
+        },
+        error: function(data) {
+            setTimeout(getsinger, 10000);
+        }
+    });
+}
+
+</script>
+{% endblock %}
+
+{% block menu %}
+{{ super() }}
+{% endblock %}
+
+{% block content %}
+
+<button onclick="restart()">Restart</button>
+<button onclick="skip()">Skip</button>
+<button onclick="playpause()">Play/Pause</button>
+<button onclick="findsongs()">Find songs</button>
+<button onclick="fullscreen()">Fullscreen</button>
+
+
+<br><br>
+    <!--<input type="text" id="song_search" onkeyup="search()" placeholder="Search .." title="Type something">-->
+    <input type="text" id="song_search" placeholder="Search .." title="Type something">
+    <button id="search_button" onclick="search()">Search</button>
+
+    <div class="data" id="data_loc"> </div>
+
+<h4>Web Results:</h4>
+<div class="data" id="data_web"> </div>
+{% endblock %}
+
+{% block onload %}
+getsingers();
+
+$('#song_search').keypress(function(event) {
+	var keycode = (event.keyCode ? event.keyCode : event.which);
+    if(keycode == '13'){
+		search();		
+	}
+});
+
+$.ajax({
+    type: "GET",
+    url: "{{ url_for('local_songs') }}",
+    async: true,
+    success: function(data) {
+        $('#data_loc').html(data);
+        hide_rows();
+    }
+});
+var web_results = localStorage.getItem('web_results');
+$('#data_web').html(web_results);
+{% endblock %}

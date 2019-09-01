@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+{% block head %}
+  {{ super() }}
+<script type="text/javascript"> 
+function getsinger() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('get_singer') }}",
+        async: true,
+        success: function(data) {
+            //console.log("Singer data: " + data);
+            $('#sidebar').html(data);
+            setTimeout(getsinger, 2000);
+        },
+        error: function(data) {
+            setTimeout(getsinger, 10000);
+        }
+    });
+}
+
+function loadData() {
+    //var local_data = localStorage.getItem('local_data');
+    var local_data;
+    if(! local_data) {
+        $.ajax({
+            type: "GET",
+            url: "{{ url_for('local_songs') }}",
+            async: true,
+            success: function(data) {
+                localStorage.setItem('local_data', data);
+                $('#data_loc').html(data);
+                hide_rows();
+            }
+        });
+    } else {
+        //$('#data_loc').html(local_data);
+    }
+
+    var web_results = localStorage.getItem('web_results');
+    $('#data_web').html(web_results);
+}
+
+</script>
+{% endblock %}
+
+
+
+{% block menu %}
+  {{ super() }}
+
+{% if username: %}
+Hello {{ username }}!  Please choose a song.
+{% else %}
+
+<script>
+username=prompt("Please enter your username:","");
+$.post(
+    "{{ url_for('setUser') }}", 
+    {'username':username},
+    function() {location.reload()}
+);
+</script>
+
+{% endif %}  
+<!--
+<form action="javascript:query()">
+    <input type=text name=query id=search_query>
+    <input type=submit>
+</form>
+-->
+
+</div>
+{% endblock %}
+
+{% block sidebar %}
+{{ super() }}
+<h3>Manual youtube</h3>
+<form action="javascript:manual_queue()">
+    SongID:<br> <input type=text name=song_id id=song_id><br>
+    Title:<br> <input text=text name=title id=title><br>
+    <input type=submit>
+</form>
+{% endblock %}
+
+{% block content %}
+<div id="user_data"> </div>
+    <input type="text" id="song_search" placeholder="Search .." title="Type something">
+    <button id="search_button" onclick="search()">Search</button>
+
+
+<div class="data" id="data_loc"> </div>
+
+<h4>Web Results:</h4>
+<div class="data" id="data_web"> </div>
+{% endblock %}
+
+
+
+{% block onload %}
+    getsinger();
+    loadData();    
+    $('#song_search').keypress(function(event) {
+        var keycode = (event.keyCode ? event.keyCode : event.which);
+        if(keycode == '13'){
+            search();		
+        }
+    });
+{% endblock %}
