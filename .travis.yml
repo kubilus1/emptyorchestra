@@ -13,17 +13,14 @@ before_install:
 
 jobs:
   include:
-  - stage: setup
-    script:
-    - pwd
-    - ls ../
   - stage: build
     script:
-     - make dist/eo.pex
+     - make dist/emptyorch_amd64_linux
+    if: tag IS blank
   - stage: release to github
     script: 
     - echo "Deploying to github..."
-    - make dist/eo.pex
+     - make dist/emptyorch_amd64_linux
     if: tag IS present
     deploy:
       provider: releases
@@ -31,7 +28,7 @@ jobs:
       skip_cleanup: true
       file_glob: true
       file:
-        - dist/eo.*
+        - dist/emptyorch_*
       on:
         tags: true
         repo: kubilus1/emptyorchestra

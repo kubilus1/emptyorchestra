@@ -44,7 +44,7 @@ import webview
 
 control_id = None
 retry_song = False
-last_song = None
+last_song = {}
 song_qs = None
 songs = None
 singer_index = 1

@@ -6,3 +6,5 @@ gTTS==2.0.1
 xmltodict
 pyyaml
 pygobject
+emptyorchestra
+jinja2
