@@ -96,7 +96,8 @@ def get_ip():
 
 def fix_utf8(instr):
     try:
-        return instr.decode('utf-8','ignore').encode('utf-8')
+        return instr
+        #return instr.decode('utf-8','ignore').encode('utf-8')
     except UnicodeEncodeError:
         print("Could not fix (%s)" % instr)
         return instr

@@ -544,10 +544,10 @@ class Reader:
             convenience label ('title', 'performer', ...),
             or return None if there is no such value.
         """
-        if self.frames.has_key(id):
+        if id in self.frames:
             if hasattr(self.frames[id], 'value'):
                 return self.frames[id].value
-        if _simpleDataMapping.has_key(id):
+        if id in _simpleDataMapping:
             for id2 in _simpleDataMapping[id]:
                 v = self.getValue(id2)
                 if v:
@@ -555,7 +555,7 @@ class Reader:
         return None
 
     def getRawData(self, id):
-        if self.frames.has_key(id):
+        if id in self.frames:
             return self.frames[id].rawData
         return None
 

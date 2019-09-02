@@ -1,0 +1,24 @@
+<h3>Current singer: {{ cur_singer }}
+<br>
+Current song: {{ cur_song.artist }} - {{ cur_song.title }}
+<br>
+</h3>
+
+Next singer index: <input onchange="set_singer_idx();" id="singer_idx" type="number" name="idx" min="1" max="{{ max_singers }}" value="{{ next_idx }}">
+<br>
+Next singer: {{ next_singer }}
+
+<ol>
+{% for k,v in song_qs.items() %}
+<li>
+    {% if loop.index0 == (next_idx-1) %}<b>*{% endif %}
+    {{ k }}
+    {% if loop.index0 == (next_idx-1) %}</b>{% endif %}
+<ol>
+    {% for song in v %}
+        <li>{{ song.artist }} - {{ song.title }}</li>
+    {% endfor %}
+</ol>
+</li>
+{% endfor %}
+</ol>
