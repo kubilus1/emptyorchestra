@@ -19,7 +19,7 @@ jobs:
     if: tag IS blank
   - stage: release to github
     script: 
-    - echo "Deploying to github..."
+     - echo "Deploying to github..."
      - make dist/emptyorch_amd64_linux
     if: tag IS present
     deploy:
