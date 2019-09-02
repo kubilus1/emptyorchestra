@@ -1,9 +1,9 @@
 packages: dist/eo.pex dist/eo.exe
 
-pyinst_img: dist
+pyinst_img:
 	docker build -t pyinstaller -f Dockerfile.pyinstall .
 
-dist/emptyorch_amd64_linux: dist
+dist/emptyorch_amd64_linux: dist pyinst_img
 	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 setup.py install && ./install.sh && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux.spec"
 
 rust_img:
