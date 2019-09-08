@@ -1,4 +1,4 @@
-packages: dist/eo.pex dist/eo.exe
+packages: dist/emptyorch_amd64_linux dist/eo.exe
 
 pyinst_img:
 	docker build -t pyinstaller -f Dockerfile.pyinstall .
