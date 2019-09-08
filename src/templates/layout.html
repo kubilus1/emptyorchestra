@@ -17,7 +17,9 @@
         <script src="{{ url_for('eo_script') }}"></script>
         <script type="text/javascript"> 
 
-
+$(document).ready(function(){
+    onLoad();
+});
 
 function onLoad(data) {
     //checkCookie();
@@ -59,7 +61,7 @@ function openMenu(x) {
         {% endblock %}
         </head>
 
-        <body onload="onLoad()">
+        <body>
             <div class="header">
                 {% block menu %}
 

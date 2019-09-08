@@ -3,17 +3,17 @@
     {{ song.title }} by
     {{ song.artist }}
 	<br>
-    {{ song.path }}
+    {{ song.path | replace('\\', '\\\\') }}
 	<br>
-    <button class="fancybutton" onclick='do_queue_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}");'>
+    <button class="fancybutton" onclick='do_queue_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path | replace('\\', '\\\\') }}", "{{ song.archive }}", "{{ song.duration }}");'>
      Queue
     </button>
 	{% if song.state == "favorite" %}
-    <button class="fancybutton" onclick='drop_favorite("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}");'>
+    <button class="fancybutton" onclick='drop_favorite("{{ song.artist }}", "{{ song.title }}", "{{ song.path | replace('\\', '\\\\') }}", "{{ song.archive }}", "{{ song.duration }}");'>
      Un-Favorite
     </button>
     {% else %}
-    <button class="fancybutton" onclick='set_favorite("{{ song.artist }}", "{{ song.title }}", "{{ song.path }}", "{{ song.archive }}", "{{ song.duration }}");'>
+    <button class="fancybutton" onclick='set_favorite("{{ song.artist }}", "{{ song.title }}", "{{ song.path | replace('\\', '\\\\') }}", "{{ song.archive }}", "{{ song.duration }}");'>
      Favorite
     </button>
     {% endif %}

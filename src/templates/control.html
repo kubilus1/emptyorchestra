@@ -10,10 +10,10 @@ function getsingers() {
         success: function(data) {
             //console.log("Singer data: " + data);
             $('#sidebar').html(data);
-            setTimeout(getsinger, 2000);
+            setTimeout(getsingers, 2000);
         },
         error: function(data) {
-            setTimeout(getsinger, 10000);
+            setTimeout(getsingers, 10000);
         }
     });
 }
