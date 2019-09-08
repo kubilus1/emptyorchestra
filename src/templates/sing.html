@@ -1,7 +1,24 @@
 {% extends "layout.html" %}
 {% block head %}
   {{ super() }}
-<script type="text/javascript"> 
+<script type="text/javascript">
+{% if admin %}
+function getsingers() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('get_all_singers') }}",
+        async: true,
+        success: function(data) {
+            //console.log("Singer data: " + data);
+            $('#control-sidebar').html(data);
+            setTimeout(getsingers, 2000);
+        },
+        error: function(data) {
+            setTimeout(getsingers, 10000);
+        }
+    });
+}
+{% endif %}
 function getsinger() {
     $.ajax({
         type: "GET",
@@ -27,7 +44,11 @@ function loadData() {
             url: "{{ url_for('local_songs') }}",
             async: true,
             success: function(data) {
-                localStorage.setItem('local_data', data);
+                try {
+                    localStorage.setItem('local_data', data);
+                } catch(e) {
+                    console.log("Could not save local_data");
+                }
                 $('#data_loc').html(data);
                 hide_rows();
             }
@@ -73,6 +94,7 @@ $.post(
 {% endblock %}
 
 {% block sidebar %}
+  <div id=control-sidebar> </div>
 {{ super() }}
 <h3>Manual youtube</h3>
 <form action="javascript:manual_queue()">
@@ -83,6 +105,15 @@ $.post(
 {% endblock %}
 
 {% block content %}
+
+{% if admin %}
+<button onclick="restart()">Restart</button>
+<button onclick="skip()">Skip</button>
+<button onclick="playpause()">Play/Pause</button>
+<button onclick="findsongs()">Find songs</button>
+<button onclick="fullscreen()">Fullscreen</button>
+{% endif %}
+
 <div id="user_data"> </div>
     <input type="text" id="song_search" placeholder="Search .." title="Type something">
     <button id="search_button" onclick="search()">Search</button>
@@ -95,8 +126,10 @@ $.post(
 {% endblock %}
 
 
-
 {% block onload %}
+{% if admin %}
+    getsingers();
+{% endif %}
     getsinger();
     loadData();    
     $('#song_search').keypress(function(event) {

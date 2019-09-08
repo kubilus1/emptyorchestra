@@ -22,3 +22,12 @@ Next singer: {{ next_singer }}
 </li>
 {% endfor %}
 </ol>
+
+<br>
+Connected Users:
+<br>
+<ol>
+{% for username,user in connected_users.items() %}
+<li>{{ username }} admin:<input type="checkbox" onclick='toggle_admin("{{username}}");' name="admin" {% if user.admin %}checked{% endif %}></li>
+{% endfor %}
+</ol>

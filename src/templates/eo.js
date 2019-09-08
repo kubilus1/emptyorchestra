@@ -46,6 +46,17 @@ function findsongs() {
     });
 }
 
+function toggle_admin(username) {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('toggle_admin') }}",
+        data: {
+            'username':username
+        },
+        async: true
+    });
+}
+
 function set_singer_idx() {
     var idx = document.getElementById('singer_idx').value;
 
