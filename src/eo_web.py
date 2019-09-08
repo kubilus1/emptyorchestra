@@ -46,6 +46,7 @@ control_id = None
 retry_song = False
 last_song = {}
 song_qs = None
+users_q = None
 songs = None
 singer_index = 1
 db = None
@@ -142,14 +143,22 @@ def search_func(val, term):
     #    return False
 
 @app.route('/')
-def index():    
+def index():
+    global users_q
     print("READY!")
     username = request.cookies.get('eoname')
     print("USERNAME:", username)
+
+    if username not in users_q:
+        print("New user!: %s" % username)
+        users_q[username] = {
+            "admin": False
+        }
     #return render_template('index.html', username=username)
     return render_template(
         'sing.html', 
-        username=username
+        username=username,
+        admin = users_q.get(username, {}).get("admin")
     )
 
 @app.route('/eo.js')
@@ -186,9 +195,10 @@ def get_singer():
     )
 
 @app.route('/get_all_singers')
-@local_only
+#@local_only
 def get_all_singers():
     global song_qs
+    global users_q
     global singer_index
     print("Qs:", song_qs)
     max_singers = len(song_qs)
@@ -204,7 +214,8 @@ def get_all_singers():
     next_singer=None
     if len(song_qs):
         next_singer = list(song_qs.keys())[next_idx-1]
-
+    print("Connected users.")
+    print(users_q)
     return render_template(
         'all_singers.html',
         song_qs=song_qs,
@@ -213,11 +224,12 @@ def get_all_singers():
         next_singer=next_singer,
         max_singers=max_singers,
         cur_song=last_song,
-        cur_singer=cur_singer
+        cur_singer=cur_singer,
+        connected_users=users_q
     )
 
 @app.route('/set_singer_idx')
-@local_only
+#@local_only
 def set_singer_idx():
     global singer_index
     idx = request.args.get('idx')
@@ -358,7 +370,7 @@ def get_vid_duration(timestamp):
     raise ValueError('no valid date format found for (%s)' % timestamp)
 
 @app.route('/fullscreen')
-@local_only
+#@local_only
 def fullscreen():
     webview.toggle_fullscreen(uid='master')
 
@@ -672,6 +684,19 @@ def local_songs():
         songs=sorted(songs, key = lambda i: (i['artist'].lower(), i['title'].lower()))
     )
 
+@app.route("/toggle_admin")
+def toggle_admin():
+    global users_q
+    username = request.args.get('username')
+    user_data = users_q.get(username, {})
+    if user_data.get('admin'):
+        user_data['admin'] = False
+    else:
+        print("Making %s admin" % username)
+        user_data['admin'] = True
+    users_q[username] = user_data
+    return '{"ret":"ok"}'
+
 @app.route('/control')
 @local_only
 def control():
@@ -679,13 +704,15 @@ def control():
     global singer_index
     print("Qs:", song_qs)
     return render_template(
-        'control.html',
+        'sing.html',
+        admin=True,
+        username="control",
         song_qs=song_qs,
         singer_idx=singer_index
     )
 
 @app.route('/play_pause')
-@local_only
+#@local_only
 def play_pause():
     global PAUSED
     if PAUSED:
@@ -703,13 +730,13 @@ def play_pause():
     return jsonify({"ret":"ok"})
 
 @app.route('/skip_song')
-@local_only
+#@local_only
 def skip_song():
     webview.load_url("http://127.0.0.1:5000/karaoke")
     return jsonify({"ret":"ok"})
 
 @app.route('/restart_song')
-@local_only
+#@local_only
 def restart_song():
     global retry_song
     global last_song
@@ -1145,7 +1172,7 @@ def run_it():
     app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
 
 @app.route('/find_songs/')
-@local_only
+#@local_only
 def get_folder():
     kfolder = webview.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
             allow_multiple=False, file_types=())
@@ -1168,6 +1195,7 @@ def check_health():
 
 def main():
     global song_qs
+    global users_q
     global singer_index 
     global songs
     global db
@@ -1199,6 +1227,7 @@ def main():
 
     singer_index = 0
     song_qs = collections.OrderedDict()
+    users_q = collections.OrderedDict()
     #app.run(host="0.0.0.0")
 
     #kpath = "/home/mkubilus/karaoke"
