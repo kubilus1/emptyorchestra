@@ -20,7 +20,7 @@ jobs:
   - stage: release to github
     script: 
      - echo "Deploying to github..."
-     - make dist/emptyorch_amd64_linux
+     - make packages
     if: tag IS present
     deploy:
       provider: releases
