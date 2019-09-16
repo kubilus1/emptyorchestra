@@ -1,0 +1,11 @@
+FROM ubuntu:bionic
+
+RUN apt-get update && apt-get install -y curl build-essential libssl-dev
+RUN curl https://sh.rustup.rs -sSf > rust.sh
+RUN chmod +x rust.sh
+RUN ./rust.sh -y
+ENV PATH=$PATH:/root/.cargo/bin
+RUN apt-get update && apt-get install -y pkg-config
+RUN cargo install pyoxidizer
+RUN apt-get update && apt-get install -y git
+

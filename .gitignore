@@ -1,5 +1,8 @@
-*~
 *.swp
 *.pyc
 *.CDG
 *.cdg
+*~
+*egg-info*
+dist
+build

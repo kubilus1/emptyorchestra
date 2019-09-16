@@ -1,0 +1,7 @@
+FROM ubuntu:bionic
+
+RUN apt-get update && apt-get -y install wget build-essential
+RUN wget -O - http://nuitka.net/deb/archive.key.gpg | apt-key add - && \
+    echo >/etc/apt/sources.list.d/nuitka.list "deb http://nuitka.net/deb/stable/bionic bionic main" && \
+    apt-get update && \
+    apt-get -y install nuitka
