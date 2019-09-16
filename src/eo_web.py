@@ -70,7 +70,10 @@ from emptyorchestra import youtube
 PKGDIR = os.path.dirname(os.path.abspath(emptyorchestra.__file__))
 print("PKGDIR: %s" % PKGDIR)
 
-ydl = youtube_dl.YoutubeDL(params={"outtmpl": os.path.join(EODIR, "cache", "out")})
+ydl = youtube_dl.YoutubeDL(params={
+    "outtmpl": os.path.join(EODIR, "cache", "out"),
+    "format": "133+bestaudio/bestvideo+bestaudio/best"
+})
 app = Flask(
     __name__,
     root_path=PKGDIR
@@ -1195,7 +1198,7 @@ def run_it():
 #@local_only
 def get_folder():
     global control_id
-    kfolder = webview.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
+    kfolder = control_id.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
             allow_multiple=False, file_types=())
 
     findKaraokes(kfolder[0])
