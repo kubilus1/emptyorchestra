@@ -19,6 +19,8 @@ import pprint
 import threading
 from functools import wraps
 import platform
+import youtube_dl
+
 
 try:
     import urllib2
@@ -37,12 +39,15 @@ from tinydb import TinyDB, Query
 from tinydb.storages import JSONStorage, MemoryStorage
 from tinydb.middlewares import CachingMiddleware
 
+MSWIN=False
 import webview
-#if platform.system() == 'Windows':
-#    print("Running on Windows.  I'm so sorry.")
+if platform.system() == 'Windows':
+    print("Running on Windows.  I'm so sorry.")
+    MSWIN=True
 #    webview.config.gui = 'cef'
 
 control_id = None
+main_window = None
 retry_song = False
 last_song = {}
 song_qs = None
@@ -52,7 +57,6 @@ singer_index = 1
 db = None
 conf = None 
 song_lock = threading.RLock()
-db_lock = threading.RLock()
 RUNNING = True
 PAUSED  = False
 
@@ -66,6 +70,7 @@ from emptyorchestra import youtube
 PKGDIR = os.path.dirname(os.path.abspath(emptyorchestra.__file__))
 print("PKGDIR: %s" % PKGDIR)
 
+ydl = youtube_dl.YoutubeDL(params={"outtmpl": os.path.join(EODIR, "cache", "out")})
 app = Flask(
     __name__,
     root_path=PKGDIR
@@ -78,6 +83,7 @@ def local_only(f):
             print("Local request allowed.")
             return f(*args, **kwargs)
         else:
+            print("Blocked non local request from %s" % str(request.remote_addr))
             return abort(403)
     return wrapped
 
@@ -239,9 +245,9 @@ def set_singer_idx():
     return '{"ret":"ok"}'
 
 def update_singers():
-    webview.evaluate_js(
-        'getsingers();',
-        uid=control_id
+    global control_id
+    control_id.evaluate_js(
+        'getsingers();'
     )
 
 @app.route('/sayit')
@@ -665,6 +671,21 @@ def wait_song():
         )
         song_data['path'] = url_for('static', filename='play.cdg')
         song_data['audio'] = url_for('static', filename='play.mp3')
+    elif play_type == 'youtube' or play_type == 'youtube_embed':
+        path = song_data.get('path')
+
+        # First cleanup
+        vids = glob.glob(os.path.join(EODIR, "cache", "out*"))
+        for v in vids:
+            os.remove(v)
+
+        ydl.download(['https://www.youtube.com/watch?v=%s' % path])
+
+        vids = glob.glob(os.path.join(EODIR, "cache", "out*"))
+        shutil.move(
+            vids[0],
+            os.path.join(PKGDIR, "static" ,"play.mkv")
+        ) 
 
     print("Got a song request! :", song_data)
     #return render_template('player.html', song=song_data)
@@ -715,24 +736,24 @@ def control():
 #@local_only
 def play_pause():
     global PAUSED
+    global main_window
     if PAUSED:
         PAUSED = False
-        webview.evaluate_js(
+        main_window.evaluate_js(
             'sound_play();',
-            uid='master'
         )
     else:
         PAUSED = True
-        webview.evaluate_js(
+        main_window.evaluate_js(
             'sound_pause();',
-            uid='master'
         )
     return jsonify({"ret":"ok"})
 
 @app.route('/skip_song')
 #@local_only
 def skip_song():
-    webview.load_url("http://127.0.0.1:5000/karaoke")
+    global main_window
+    main_window.load_url("http://127.0.0.1:5000/karaoke")
     return jsonify({"ret":"ok"})
 
 @app.route('/restart_song')
@@ -740,20 +761,24 @@ def skip_song():
 def restart_song():
     global retry_song
     global last_song
+    global main_window
+
     with song_lock:
         retry_song = True
-    webview.load_url("http://127.0.0.1:5000/karaoke")
+    main_window.load_url("http://127.0.0.1:5000/karaoke")
     return jsonify({"ret":"ok"})
 
 @app.route('/play_youtube')
 def play_youtube():
+    global main_window
+
     song_data = json.loads(request.args.get('song_data',"{}"))
     print("Received: %s" % song_data)
     #youtube_url = "http://www.youtube.com/watch?v=%s" % song_data.get('path')
     youtube_url = "http://www.youtube.com/watch?v=%s?app=m" % song_data.get('path')
     sleep_seconds = (int(song_data.get('duration')/1000))
     print("About to play: %s" % youtube_url)
-    webview.load_url(youtube_url)
+    main_window.load_url(youtube_url)
     time.sleep(5)
     url = webview.get_current_url(uid='master')
     #print("Will wait for %s ..." % sleep_seconds)
@@ -765,11 +790,10 @@ def play_youtube():
         cur_url = webview.get_current_url(uid='master')
 
     print("URL changed (%s != %s), song is complete." % (url, cur_url))
-    webview.load_url("http://127.0.0.1:5000/karaoke")
+    main_window.load_url("http://127.0.0.1:5000/karaoke")
     time.sleep(1)
-    webview.evaluate_js(
+    main_window.evaluate_js(
         'song_end(%s);' % jsonify(song_data),
-        uid='master'
     )
     return jsonify({"ret":"ok"})
 
@@ -817,6 +841,10 @@ def play_song():
     if archive == 'youtube':
         play_type = 'youtube'
         audio = ""
+        if os.path.isfile('out.mkv'):
+            os.remove('out.mkv')
+        ydl.download(['https://www.youtube.com/watch?v=%s' % path ])
+        shutil.copy("%s.cdg" % filename, "static/play.mkv") 
     elif archive.endswith('.zip'):
         print("Playing zip.")
         play_type = 'cdg'
@@ -825,7 +853,7 @@ def play_song():
 
         filename = os.path.splitext(path)[0]
         print("FILENAME:", filename)
-        shutil.copy("%s)cdg" % filename, "static/play.cdg") 
+        shutil.copy("%s.cdg" % filename, "static/play.cdg") 
         shutil.copy("%s.mp3" % filename, "static/play.mp3") 
         path = url_for('static', filename='play.cdg')
         audio = url_for('static', filename='play.mp3')
@@ -1161,36 +1189,37 @@ def fix_songdb():
 
 
 def run_it():
-    global control_id
-    control_id = webview.create_window(
-        "ControlPanel", 
-        "http://127.0.0.1:5000/control",
-        width=800,
-        height=500,
-        debug=True
-    )
     app.run(host='0.0.0.0', debug=True, threaded=True, use_reloader=False)
 
 @app.route('/find_songs/')
 #@local_only
 def get_folder():
+    global control_id
     kfolder = webview.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
             allow_multiple=False, file_types=())
 
     findKaraokes(kfolder[0])
+    control_id.load_url("http://127.0.0.1:5000/control")
     return json.dumps({"ret":"ok"})
 
 def check_health():
     global RUNNING
+    global main_window
 
-    time.sleep(30)
-    while RUNNING:
-        if not webview.window_exists(uid='master'):
-            RUNNING=False
-        time.sleep(2)
+    RUNNING=True
+
+    time.sleep(10)
+    try:
+        while RUNNING:
+            if not main_window.get_current_url():
+                RUNNING=False
+            time.sleep(2)
+            print("Checking health")
+    except KeyError:
+        RUNNING=False
 
     print("Main window no longer running.")
-    webview.destroy_window(uid=control_id)
+    control_id.destroy()
    
 
 def main():
@@ -1200,6 +1229,8 @@ def main():
     global songs
     global db
     global conf
+    global main_window
+    global control_id
 
     if not os.path.isdir(EODIR):
         os.makedirs(EODIR)
@@ -1210,6 +1241,8 @@ def main():
             os.path.join(PKGDIR, 'eo_conf.yml'),
             conf_path
         )
+    if not os.path.isdir(os.path.join(EODIR, "cache")):
+        os.mkdir(os.path.join(EODIR, "cache"))
 
     with open(conf_path) as h:
         conf = yaml.load(h)
@@ -1244,21 +1277,29 @@ def main():
 
     #t2 = threading.Thread(target=get_folder)
     #t2.start()
+    time.sleep(1)
+    main_window = webview.create_window(
+        "EmptyOrchestra", 
+        "http://127.0.0.1:5000/karaoke",
+        width=1024,
+        height=768,
+    )
+    control_id = webview.create_window(
+        "ControlPanel", 
+        "http://127.0.0.1:5000/control",
+        width=800,
+        height=500,
+    )
     try:
-        webview.create_window(
-            "EmptyOrchestra", 
-            "http://127.0.0.1:5000/karaoke",
-            width=1024,
-            height=768,
-            debug=True
-        )
+        webview.start(debug=True)
         print("Main window exited.")
     except KeyboardInterrupt:
         print("Exiting")
     finally:
         global RUNNING
         RUNNING = False
-        webview.destroy_window(uid=control_id)
+        main_window.destroy()
+        control_id.destroy()
         #scan_t.join(30)
         db.close()
 

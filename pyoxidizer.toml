@@ -1,0 +1,24 @@
+# Multiple [[python_distribution]] sections elided for brevity.
+
+[[build]]
+application_name = "emptyorchestra"
+
+[[embedded_python_config]]
+raw_allocator = "system"
+
+[[packaging_rule]]
+type = "stdlib-extensions-policy"
+policy = "all"
+
+[[packaging_rule]]
+type = "stdlib"
+include_source = false
+
+[[packaging_rule]]
+type = "pip-install-simple"
+package = "emptyorchestra"
+install_location = "app-relative:lib"
+
+[[embedded_python_run]]
+mode = "module"
+module = "emptyorchestra.eo_web"

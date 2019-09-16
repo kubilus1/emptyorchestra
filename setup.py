@@ -29,7 +29,7 @@ setup(
     install_requires=[
         'tinydb >= 3.7',
         'Flask >= 0.12',
-        'pywebview == 2.4',
+        'pywebview >= 3.0',
         'gTTS == 2.0.1',
         'xmltodict < 0.12',
         'pyyaml'

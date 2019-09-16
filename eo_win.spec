@@ -22,10 +22,11 @@ a = Analysis(['src\\eo_web.py'],
                 ('src/static/tracks/*.mp3','emptyorchestra/static/tracks'),
                 ('src/static/css/*.css', 'emptyorchestra/static/css'),
                 ('src/static/js/*.js', 'emptyorchestra/static/js'),
-                ('src/static/*.mp3', 'emtpyorchestra/static'),
+                ('src/static/*.mp3', 'emptyorchestra/static'),
                 ('src/eo_conf.yml', 'emptyorchestra'),
                 ('src/*.py', '.'),
                 ('/wine/drive_c/Python36/Lib/site-packages/webview/lib/WebBrowserInterop.x64.dll','webview/lib'),
+                ('mic1.png', '.')
                 #('/wine/drive_c/Python36/Lib/site-packages/cefpython3/*.dat', 'cefpython3'),
                 #('/wine/drive_c/Python36/Lib/site-packages/cefpython3/*.dll', 'cefpython3'),
                 #('/wine/drive_c/Python36/Lib/site-packages/cefpython3/*.pak', 'cefpython3'),
@@ -72,4 +73,6 @@ exe = EXE(pyz,
           strip=False,
           upx=False,
           runtime_tmpdir=None,
-          console=True )
+          console=True, 
+          icon="mic1.ico"
+)

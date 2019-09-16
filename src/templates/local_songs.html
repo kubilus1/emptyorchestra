@@ -15,7 +15,7 @@
             <td colspan=2 idx="{{ song.artist[0]|upper }}" class="collapsible">{{ song.artist[0]|upper }}</td>
         </tr>
     {% endif %}
-    <tr expand=0 class="collapsed row_{{ ns.start_letter }}" idx="{{ ns.start_letter|upper }}" onclick='do_click_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path | replace('\\','\\\\') }}", "{{ song.archive }}", "normal");'>
+    <tr expand=0 class="collapsed row_{{ ns.start_letter }}" idx="{{ ns.start_letter|upper }}" onclick='do_click_song("{{ song.artist }}", "{{ song.title }}", "{{ song.path | replace('\\','\\\\') }}", "{{ song.archive | replace('\\','\\\\') }}", "normal");'>
         <td style="width:60%" idx="{{ ns.start_letter|upper }}">{{ song.artist }}</td>
         <td style="width:40%" idx="{{ ns.start_letter|upper }}">{{ song.title }}</td>
     </tr>
