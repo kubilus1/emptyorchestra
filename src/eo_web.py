@@ -70,10 +70,17 @@ from emptyorchestra import youtube
 PKGDIR = os.path.dirname(os.path.abspath(emptyorchestra.__file__))
 print("PKGDIR: %s" % PKGDIR)
 
-ydl = youtube_dl.YoutubeDL(params={
-    "outtmpl": os.path.join(EODIR, "cache", "out"),
-    "format": "133+bestaudio/bestvideo+bestaudio/best"
-})
+if shutil.which('ffmpeg') or shutil.which('avconv'):
+    ydl = youtube_dl.YoutubeDL(params={
+        "outtmpl": os.path.join(EODIR, "cache", "out"),
+        "format": "133+bestaudio/bestvideo+bestaudio/best"
+    })
+else:
+    ydl = youtube_dl.YoutubeDL(params={
+        "outtmpl": os.path.join(EODIR, "cache", "out"),
+        "format": "best"
+    })
+
 app = Flask(
     __name__,
     root_path=PKGDIR
@@ -1280,7 +1287,11 @@ def main():
 
     #t2 = threading.Thread(target=get_folder)
     #t2.start()
-    time.sleep(1)
+    if MSWIN:
+        time.sleep(3)
+    else:    
+        time.sleep(1)
+
     main_window = webview.create_window(
         "EmptyOrchestra", 
         "http://127.0.0.1:5000/karaoke",
