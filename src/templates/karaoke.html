@@ -111,6 +111,15 @@ function do_play_song(artist, title, path, archive) {
     
 }
 
+function resize(obj) {
+    var width = window.innerWidth * 0.8;
+    var height = window.innerHeight * 0.8;
+    width = Math.max(1024, width);
+    height = Math.max(768, height);
+    obj.css("height", height);
+    obj.css("width", width);
+}
+
 function play_vid(data) {
     bumper_stop();
     set_stage();
@@ -119,35 +128,39 @@ function play_vid(data) {
     var timestamp = +new Date;
     var vid_url = "/static/play.mkv?t="+timestamp;
 
-    var html_str = '<video id="karaoke-display" width="320" height="216" autoplay="autoplay">' +
+    var html_str = '<video id="song" width="60%" autoplay="autoplay">' +
         '<source src="'+ vid_url +'" type="video/mp4" />' +
         '</video>'
     $('#cdg_player').html(html_str);
 
-    resize_cdg();
-    window.addEventListener('resize', resize_cdg, false);
-    window.addEventListener('orientationchange', resize_cdg, false);
+    resize($('#song'));
+    window.addEventListener('resize', function() {
+        resize($('#song'));
+    }, false);
+    window.addEventListener('orientationchange', function() {
+        resize($('#song'));
+    }, false);
 
-
-    $('#karaoke-display').bind("playing", function() {
+    $('#song').bind("playing", function() {
         console.log("Event: playing.");
         this.volume = '0.9';
     });
-    $('#karaoke-display').bind("pause", function() {
+    $('#song').bind("pause", function() {
         console.log("Event: paused.");
     });
 
-    $('#karaoke-display').on('canplay', function() {
+    $('#song').on('canplay', function() {
         console.log(this);
         this.play();
     });
 
-    $('#karaoke-display').on('ended', function() {
-        $('#karaoke-display').hide();
+    $('#song').on('ended', function() {
+        $('#song').hide();
         song_end(data);
     });
 
     $('#cdg_player').show();
+    $('#song').show();
     $('#youtube_embed').hide();
     $('#inter').hide();
 }
