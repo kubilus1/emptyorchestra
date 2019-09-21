@@ -1,8 +1,31 @@
-# emptyorchestra
+# Emptyorchestra
+![logo](/mic1.png)
 
-Manage your karaoke library and play songs.  Provides some features such as:
+Play your karaoke library on your computer or have a karaoke party with
+friends.  Emptyorchestra is your own personal KJ!
 
-* A built in web server to browse songs via mobile device
-* Suggest similar songs based on the current search
-* Manage a singer queue
-* Search and play karaoke found on sites like 'Youtube'
+![party](/party1.jpg)
+
+Just download and run the executable for your platform.  Friends on your
+network can join in by scanning the QR code in the top left corner, entering
+their user name, and that's it!  
+
+Emptyorchestra takes care of the rest!
+
+You can even elect users from the main control window to be able to control
+the party.
+
+![sing](/sing1.jpg)
+
+## Find karaoke songs on the internet as well as local files!
+
+You can pull in your personal karaoke library, as well as find karaoke songs
+on the internet!
+
+## Save your favorites for later, suggest me songs I might like!
+
+Emptyorchestra can allow you to store a personal favorites list.  Not sure
+what you want to sing, Emptyorchestra can automatically generate suggestions
+based on your favorites!
+
+
