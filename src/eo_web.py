@@ -1225,7 +1225,7 @@ def check_health():
                 RUNNING=False
             time.sleep(2)
             print("Checking health")
-    except KeyError:
+    except Exception:
         RUNNING=False
 
     print("Main window no longer running.")
