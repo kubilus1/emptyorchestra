@@ -1,5 +1,5 @@
+![logo](/mic1.jpg) 
 # Emptyorchestra
-![logo](/mic1.png)
 
 Play your karaoke library on your computer or have a karaoke party with
 friends.  Emptyorchestra is your own personal KJ!
