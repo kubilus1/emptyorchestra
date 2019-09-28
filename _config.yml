@@ -1,5 +1,6 @@
 theme: jekyll-theme-architect
 show_downloads: true
+show_releases: true
 title: Emptyorchestra
 github:
   win_url: https://github.com/kubilus1/emptyorchestra/releases/latest/download/emptyorch.exe
