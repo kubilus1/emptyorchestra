@@ -1,8 +1,3 @@
-[emptyorch_amd64_linux](https://github.com/kubilus1/emptyorchestra/releases/latest/download/emptyorch_amd64_linux)
-[emptyorch.exe](https://github.com/kubilus1/emptyorchestra/releases/latest/download/emptyorch.exe)
-
-# Emptyorchestra
-
 Play your karaoke library on your computer or have a karaoke party with
 friends.  Emptyorchestra is your own personal KJ!
 
