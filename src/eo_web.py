@@ -19,8 +19,15 @@ import pprint
 import threading
 from functools import wraps
 import platform
-import youtube_dl
 
+#import pip
+#print("PIP version: ", pip.__version__)
+#from pip._internal import main as pip_main
+# Always update youtube_dl
+#pip_main(['install','-U','youtube_dl'])
+
+import youtube_dl
+print("Youtube_dl version: ", youtube_dl.version.__version__)
 
 try:
     import urllib2

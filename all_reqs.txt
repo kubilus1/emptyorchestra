@@ -1,5 +1,6 @@
 tinydb >= 3.7
 #ujson
+#pip >= 20.0
 Flask >= 0.12
 pywebview >= 3.0 
 gTTS==2.0.1
@@ -8,4 +9,4 @@ youtube-dl
 pyyaml
 pygobject
 emptyorchestra
-jinja2
+jinja2 >= 2.11.1
