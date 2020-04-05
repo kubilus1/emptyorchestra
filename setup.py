@@ -27,7 +27,7 @@ setup(
         'console_scripts': ['emptyorch=emptyorchestra.eo_web:main'],
     },
     install_requires=[
-        'jinja2 == 2.11.1',
+        'jinja2 < 3.0',
         'tinydb >= 3.7',
         'Flask >= 0.12',
         'pywebview >= 3.0',

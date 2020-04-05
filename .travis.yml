@@ -16,6 +16,7 @@ jobs:
   - stage: build
     script:
      - make dist/emptyorch_amd64_linux
+     - make dist/eo.exe
     if: tag IS blank
   - stage: release to github
     script: 
