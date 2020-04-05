@@ -27,6 +27,7 @@ a = Analysis(['src\\eo_web.py'],
                 ('src/*.py', '.'),
                 ('/wine/drive_c/Python36/Lib/site-packages/webview/lib/WebBrowserInterop.x64.dll','webview/lib'),
                 ('mic1.png', '.')
+                #('/wine/drive_c/Python36/Lib/site-packages/pip/_vendor/certifi','pip/_vendor/certifi'),
                 #('/wine/drive_c/Python36/Lib/site-packages/cefpython3/*.dat', 'cefpython3'),
                 #('/wine/drive_c/Python36/Lib/site-packages/cefpython3/*.dll', 'cefpython3'),
                 #('/wine/drive_c/Python36/Lib/site-packages/cefpython3/*.pak', 'cefpython3'),

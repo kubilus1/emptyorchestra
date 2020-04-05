@@ -19,6 +19,7 @@ a = Analysis(['src/eo_web.py'],
                 #('/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0/M*', 'webkit2gtk-4.0'),
                 #('/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0/injected-bundle/libwebkit2gtkinjectedbundle.so', 'webkit2gtk-4.0/injected-bundle'),
                 ('/usr/lib/x86_64-linux-gnu/gstreamer-1.0/*', 'gstreamer-1.0'),
+                #('/usr/local/lib/python3.5/dist-packages/pip/_vendor/certifi/cacert.pem', 'pip/_vendor/certifi')
             ],
              datas=[
                 ('src/templates/*.html','emptyorchestra/templates'),
@@ -63,5 +64,5 @@ exe = EXE(pyz,
           upx=True,
           runtime_tmpdir=None,
           console=True, 
-          icon="mic1.png"
+          icon="emptyorchestra_amd64_linxu.png"
 )
