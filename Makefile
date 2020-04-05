@@ -26,7 +26,8 @@ dist/eo.pex: dist pex_img
 	docker run -w /src --rm -it -v `pwd`:/src pex /bin/bash -c "python3 setup.py install && pex -v --python=python3 --python-shebang='/usr/bin/env python3'  --disable-cache -r all_reqs.txt --build . -o $@ -e emptyorchestra.eo_web"
 
 dist/eo.exe: dist
-	docker run --rm -it -v `pwd`:/src cdrx/pyinstaller-windows:python3 "python setup.py install && pip install -r requirements.txt && cp ./hooks/hook-webview.py /wine/drive_c/Python36/Lib/site-packages/PyInstaller/hooks/hook-webview.py && pyinstaller --clean --workpath /tmp eo_win.spec"
+	docker run --rm -it -v `pwd`:/src cdrx/pyinstaller-windows:python3 "python setup.py install && pip install -r requirements.txt && pyinstaller --clean --workpath /tmp eo_win.spec"
+	#docker run --rm -it -v `pwd`:/src cdrx/pyinstaller-windows:python3 "python setup.py install && pip install -r requirements.txt && cp ./hooks/hook-webview.py /wine/drive_c/Python37/Lib/site-packages/PyInstaller/hooks/hook-webview.py && pyinstaller --clean --workpath /tmp eo_win.spec"
 
 dist:
 	mkdir $@
