@@ -375,7 +375,9 @@ def search_web(term=None):
         #print("REQUEST:", request.args)
         term = request.args.get('term', "")
 
-    yts = youtube.yt_scrape()
+    #yts = youtube.yt_scrape()
+
+    yts = youtube.yt_search()
 
     karaokes = yts.search(term)
     
