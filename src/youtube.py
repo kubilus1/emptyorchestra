@@ -1,4 +1,5 @@
 import re
+import uyts
 try:
     from urllib2 import urlopen
     from urllib import quote
@@ -64,15 +65,51 @@ class yt_api_3(object):
         return karaokes
 
 
+class yt_search(object):
+
+    def __init__(self):
+        print("Using uyts")
+
+    def search(self, term):
+        karaokes = []
+
+        search = uyts.Search("karaoke %s" % term)
+        for result in search.results:
+            if result.resultType == 'video':
+                print("Found a vid: %s" % result)
+                artist = ''
+                title = result.title
+                vidurl = 'http://www.youtube.com/embed/%s?autoplay=1' % result.id
+                m = SONGID_RE.match(title)
+                if m:
+                    print("MATCH!!")
+                    print(m.groupdict())
+                    songdict = m.groupdict()
+                    artist = songdict.get('artist')
+                    title = songdict.get('title')
+                else:
+                    print("No match for (%s)" % title)
+
+                karaokes.append({
+                    'vidid': result.id,
+                    'artist':artist.replace('"',"'"),
+                    'title': title.replace('"',"'"),
+                    'imgurl': result.thumbnail_src,
+                    'vidurl': vidurl,
+                    'duration': result.duration
+                })
+
+        return karaokes
 
 class yt_scrape(object):
     def __init__(self):
-        self.base_url = "https://m.youtube.com/results?search_query="
+        self.base_url = "https://www.youtube.com/results?search_query="
 
     def search(self, term):
         youtube_url = "%s%s" % (self.base_url, quote("karaoke %s" % term)) 
         print(youtube_url)
         raw_data = do_url(youtube_url)
+        print(raw_data)
         soup = BeautifulSoup(raw_data, 'html.parser')
 
         links = soup.find_all("div", class_="yt-lockup-video")
@@ -80,6 +117,7 @@ class yt_scrape(object):
         karaokes = []
 
         for link in links:
+            print(link)
             vidid = link['data-context-item-id']
             duration = link.find('span', class_='video-time').getText() 
             title = link.find('a', class_='yt-uix-tile-link')['title']
@@ -87,6 +125,7 @@ class yt_scrape(object):
             vidurl = 'http://www.youtube.com/embed/%s?autoplay=1' % vidid
 
             if vidid:
+                print("Found a vid: %s" % vidid)
                 artist = ''
                 m = SONGID_RE.match(title)
                 if m:
