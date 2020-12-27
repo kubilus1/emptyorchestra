@@ -28,12 +28,14 @@ setup(
     },
     install_requires=[
         'jinja2 < 3.0',
-        'tinydb >= 3.7',
+        'tinydb == 3.15.2',
         'Flask >= 0.12',
-        'pywebview >= 3.0',
-        'gTTS == 2.0.1',
+        'pywebview >= 3.4',
+        'gTTS == 2.2.1',
         'xmltodict < 0.12',
-        'pyyaml'
+        'pyyaml',
+        'unlimited-youtube-search',
+        'flask-cors'
     ]
     #scripts=['src/emptyorch']
 )

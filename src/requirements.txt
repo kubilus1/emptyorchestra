@@ -1,7 +1,0 @@
-tinydb >= 3.7
-#ujson
-Flask >= 0.12
-pywebview
-gtts
-xmltodict
-pyyaml
