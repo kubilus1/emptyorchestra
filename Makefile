@@ -10,7 +10,7 @@ enter: pyinst_img
 	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash
 
 dist/emptyorch_amd64_linux: dist pyinst_img
-	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 setup.py install && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux.spec"
+	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 -m pip install -U pip && python3 setup.py install && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux.spec"
 
 rust_img:
 	docker build -t rust -f Dockerfile.rust .
