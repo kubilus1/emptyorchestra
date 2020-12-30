@@ -118,3 +118,14 @@ canvas {
     image-rendering: crisp-edges;               // Possible future browsers.
     -ms-interpolation-mode: nearest-neighbor;   // IE (non standard naming)
 }
+
+#splashscreen {
+    position:absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    opacity: 0.95;
+    background-color: grey;
+    display: none;
+}

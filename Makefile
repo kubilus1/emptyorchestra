@@ -12,6 +12,9 @@ enter: pyinst_img
 dist/emptyorch_amd64_linux: dist pyinst_img
 	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 -m pip install -U pip && python3 setup.py install && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux.spec"
 
+dist/emptyorch_min_amd64_linux: dist pyinst_img
+	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 -m pip install -U pip && python3 setup.py install && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux_min.spec"
+
 rust_img:
 	docker build -t rust -f Dockerfile.rust .
 
@@ -32,6 +35,12 @@ dist/eo.exe: dist
 dist:
 	mkdir $@
 
+dist_pkg:
+	python3 setup.py sdist bdist_wheel
+
+release:
+	twine upload dist/*
+	
 clean:
 	-rm *.whl
 	-rm -rf build

@@ -14,7 +14,6 @@ import collections
 from datetime import datetime
 import socket
 import zipfile
-import webbrowser
 import pprint
 import threading
 from functools import wraps
@@ -47,12 +46,12 @@ from tinydb.storages import JSONStorage, MemoryStorage
 from tinydb.middlewares import CachingMiddleware
 
 MSWIN=False
-import webview
 if platform.system() == 'Windows':
     print("Running on Windows.  I'm so sorry.")
     MSWIN=True
 #    webview.config.gui = 'cef'
 
+commands = Queue()
 control_id = None
 main_window = None
 retry_song = False
@@ -188,6 +187,14 @@ def index():
 def eo_script():
     return render_template('eo.js')
 
+@app.route('/get_command')
+def get_command():
+    global commands
+    cmd = commands.get()
+    print("Sending command: %s" % cmd)
+    return jsonify({"command":cmd})
+
+
 @app.route('/get_singer')
 def get_singer():
     print("/get_singer")
@@ -262,6 +269,9 @@ def set_singer_idx():
     return '{"ret":"ok"}'
 
 def update_singers():
+    # Disabling as this should be unnecessary
+    return
+
     global control_id
     control_id.evaluate_js(
         'getsingers();'
@@ -572,15 +582,21 @@ def karaoke():
     backgrounds = [ x for x in images if x.startswith('bg_') ]
     kj_images = [ x for x in images if x.startswith('kj_') ]
 
+    startup = request.cookies.get('startup', 'true')
+
     print("My ip: %s" % IP)
-    return render_template(
+    resp = make_response(render_template(
         'karaoke.html', 
         ip=IP, 
         bumper_songs=str(tracks),
         backgrounds=str(backgrounds),
         next_images=str(next_images),
         kj_images=str(kj_images)
-    )
+    ))
+
+    resp.set_cookie('startup', startup)
+
+    return resp
 
 @app.route('/wait_song/')
 @local_only
@@ -595,7 +611,7 @@ def wait_song():
     print("Waiting for song request %s" % singer_index)
 
     while PAUSED:
-        return jsonify(None)
+        return jsonify({})
 
     with song_lock:
         if retry_song:
@@ -621,7 +637,7 @@ def wait_song():
             song_data = singer_queue.pop(0)
     except IndexError:
         print("No data yet...")
-        return jsonify(None)
+        return jsonify({})
 
 
     #
@@ -755,36 +771,37 @@ def control():
 #@local_only
 def play_pause():
     global PAUSED
-    global main_window
+    global commands
+    #global main_window
     if PAUSED:
         PAUSED = False
-        main_window.evaluate_js(
-            'sound_play();',
-        )
+        commands.put('play')
     else:
         PAUSED = True
-        main_window.evaluate_js(
-            'sound_pause();',
-        )
+        commands.put('pause')
     return jsonify({"ret":"ok"})
 
 @app.route('/skip_song')
 #@local_only
 def skip_song():
-    global main_window
-    main_window.load_url("http://127.0.0.1:5000/karaoke")
+    global commands
+    #global main_window
+    #main_window.load_url("http://127.0.0.1:5000/karaoke")
+    #main_window.open("http://127.0.0.1:5000/karaoke", new=0)
+    commands.put('skip')
     return jsonify({"ret":"ok"})
 
 @app.route('/restart_song')
 #@local_only
 def restart_song():
     global retry_song
-    global last_song
-    global main_window
+    #global last_song
+    #global main_window
 
     with song_lock:
         retry_song = True
-    main_window.load_url("http://127.0.0.1:5000/karaoke")
+    #main_window.load_url("http://127.0.0.1:5000/karaoke")
+    commands.put('restart')
     return jsonify({"ret":"ok"})
 
 @app.route('/play_youtube')
@@ -1223,7 +1240,7 @@ def get_folder():
 
 def check_health():
     global RUNNING
-    global main_window
+   # global main_window
 
     RUNNING=True
 
@@ -1241,6 +1258,71 @@ def check_health():
     control_id.destroy()
    
 
+def start_embedded():
+    import webview
+    global main_window
+    global control_id
+
+    t = threading.Thread(target=run_it)
+    t.daemon = True
+    t.start()
+
+    health_t = threading.Thread(target=check_health)
+    health_t.daemon = True
+    health_t.start()
+
+    if MSWIN:
+        time.sleep(3)
+    else:    
+        time.sleep(1)
+
+    main_window = webview.create_window(
+        "EmptyOrchestra", 
+        "http://127.0.0.1:5000/karaoke",
+        width=1024,
+        height=768,
+    )
+    control_id = webview.create_window(
+        "ControlPanel", 
+        "http://127.0.0.1:5000/control",
+        width=800,
+        height=500,
+    )
+    try:
+        if MSWIN:
+            webview.start(debug=True)
+        else:
+            webview.start(gui='qt', debug=True)
+        print("Main window exited.")
+    except KeyboardInterrupt:
+        print("Exiting")
+    finally:
+        global RUNNING
+        RUNNING = False
+        main_window.destroy()
+        control_id.destroy()
+        db.close()
+
+
+def start_local_browser():
+    import webbrowser
+    control_window = webbrowser.get()
+    control_window.open('http://127.0.0.1:5000/control', new=1)
+
+    main_window = webbrowser.get()
+    main_window.open('http://127.0.0.1:5000/karaoke', new=0)
+
+    try:
+        run_it()
+        print("Main window exited.")
+    except KeyboardInterrupt:
+        print("Exiting")
+    finally:
+        global RUNNING
+        RUNNING = False
+        db.close()
+
+
 def main():
     global song_qs
     global users_q
@@ -1248,8 +1330,6 @@ def main():
     global songs
     global db
     global conf
-    global main_window
-    global control_id
 
     if not os.path.isdir(EODIR):
         os.makedirs(EODIR)
@@ -1269,62 +1349,12 @@ def main():
     db = EoDB(os.path.join(EODIR, 'eo.tdb'))
     conf_table = db.db.table('conf')
 
-    #kpath = "/media/nas/karaoke"
-    #scan_t = threading.Thread(
-    #    target=findKaraokes,
-    #    args=(kpath,)
-    #)
-
-    #scan_t.start()
-
     singer_index = 0
     song_qs = collections.OrderedDict()
     users_q = collections.OrderedDict()
-    #app.run(host="0.0.0.0")
 
-    #kpath = "/home/mkubilus/karaoke"
-    #kpath = "/media/nas/karaoke"
-    #songs = findKaraokes(kpath)
-
-    t = threading.Thread(target=run_it)
-    t.daemon = True
-    t.start()
-
-    health_t = threading.Thread(target=check_health)
-    health_t.daemon = True
-    health_t.start()
-
-    #t2 = threading.Thread(target=get_folder)
-    #t2.start()
-    if MSWIN:
-        time.sleep(3)
-    else:    
-        time.sleep(1)
-
-    main_window = webview.create_window(
-        "EmptyOrchestra", 
-        "http://127.0.0.1:5000/karaoke",
-        width=1024,
-        height=768,
-    )
-    control_id = webview.create_window(
-        "ControlPanel", 
-        "http://127.0.0.1:5000/control",
-        width=800,
-        height=500,
-    )
-    try:
-        webview.start(debug=True)
-        print("Main window exited.")
-    except KeyboardInterrupt:
-        print("Exiting")
-    finally:
-        global RUNNING
-        RUNNING = False
-        main_window.destroy()
-        control_id.destroy()
-        #scan_t.join(30)
-        db.close()
+    #start_local_browser()
+    start_embedded()
 
 if __name__ == "__main__":
     main()
