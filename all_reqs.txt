@@ -1,7 +1,7 @@
 tinydb == 3.15.2
 #ujson
 Flask >= 0.12
-pywebview >= 3.4 
+pywebview[qt] >= 3.4 
 gTTS==2.2.1
 xmltodict==0.11.0
 youtube-dl
@@ -11,3 +11,4 @@ emptyorchestra
 jinja2 < 3.0
 unlimited-youtube-search
 flask-cors
+beautifulsoup4

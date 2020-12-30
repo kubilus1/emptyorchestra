@@ -15,8 +15,49 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
         <script src="{{ url_for('static', filename='js/wcdg.js') }}"></script>
         <script src="{{ url_for('static', filename='js/id3v2.js') }}"></script>
+        <script src="{{ url_for('eo_script') }}"></script>
         <script src="http://www.youtube.com/player_api"></script>
         <script type="text/javascript"> 
+
+var commands = {
+    "play": sound_play,
+    "pause": sound_pause,
+    "restart": do_reload,
+    "skip": do_reload
+}
+
+function getcommands() {
+    $.ajax({
+        type: "GET",
+        url: "{{ url_for('get_command') }}",
+        async: true,
+        success: function(data) {
+            cmd = data.command;
+            console.log("Do: " + cmd);
+            var func = commands[cmd];
+            if(func) {
+                console.log(func);
+                func();
+            }
+            setTimeout(getcommands, 2000);
+        },
+        error: function(data) {
+            setTimeout(getcommands, 10000);
+        }
+    });
+}
+
+function open_control(){
+    window.open(
+        "http://127.0.0.1:5000/control",
+        "EmptyOrchestra Control Panel",
+        "height=768,width=1024,toolbar=no,menubar=no"
+    )
+}
+
+function do_reload() {
+    location.reload();
+}
 
 function say(m) {
     $.ajax({
@@ -63,9 +104,22 @@ function randomChoice(arr) {
 
 function onLoad(data) {
     console.log("On Load...");
-    
-    bumper_music();
-    do_wait_song();
+    getcommands();
+    //alert("Hello!");
+    //open_control();
+
+    if(sessionStorage.getItem('splash') !== 'true') {
+        $('#splashscreen').show();
+        sessionStorage.setItem('splash', 'true');
+        $('#splashscreen').click(function() {
+            bumper_music();
+            do_wait_song();
+            $(this).fadeOut(500);
+        });
+    } else {
+        bumper_music();
+        do_wait_song();
+    }
 
     //checkCookie();
     //alert($(data));
@@ -269,6 +323,7 @@ function bumper_stop() {
     player.src = player.src;
 }
 function sound_pause() {
+    console.log("sound_pause");
     var bg_player = document.getElementById('bumpsong');
 	var cdg_player = document.getElementById('song');
     if (cdg_player != null) {
@@ -279,6 +334,7 @@ function sound_pause() {
     }
 }
 function sound_play() {
+    console.log("sound_play");
     var bg_player = document.getElementById('bumpsong');
 	var cdg_player = document.getElementById('song');
     if (cdg_player != null) {
@@ -411,7 +467,7 @@ function do_wait_song() {
         async: true,
         success: function(data) {
             //$('#play_cdg').html(data);
-            if (data != null) {
+            if (data.type != null) {
                 $.ajax({
                     type: "GET",
                     url: "{{ url_for('show_next') }}?rand="+Math.random(),
@@ -475,11 +531,21 @@ function do_wait_song() {
 
         </head>
         <body onload="onLoad()" class="hcenter">
-        <div id="startup">
-            <div id="support" style="position:absolute;z-index:99999;color:red;font-size:x-large"> <!-- insert cheap knockoff modernizer clone -->
-            
+
+            <div id="splashscreen">
+                <div class="centered">
+                    <h2>Welcome to EmptyOrchestra!</h2>
+                    <h4>Click anywhere to get started...</h4>
+                </div>
             </div>
-        </div>
+            
+
+
+            <div id="startup">
+                <div id="support" style="position:absolute;z-index:99999;color:red;font-size:x-large"> <!-- insert cheap knockoff modernizer clone -->
+            
+                </div>
+            </div>
 
             <div id="header">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=http://{{ ip }}:5000"></img>
