@@ -15,13 +15,14 @@ jobs:
   include:
   - stage: build
     script:
-     - make dist/emptyorch_amd64_linux
-     - make dist/eo.exe
+     - make tux_pkg
+     - make win_pkg
     if: tag IS blank
   - stage: release to github
     script: 
      - echo "Deploying to github..."
-     - VER=$TRAVIS_TAG make packages
+     - VER=$TRAVIS_TAG make tux_pkg
+     - VER=$TRAVIS_TAG make win_pkg
     if: tag IS present
     deploy:
       provider: releases
@@ -29,8 +30,8 @@ jobs:
       skip_cleanup: true
       file_glob: true
       file:
-        - dist/electron_build/emptyorch-*.AppImage
-        - dist/electron_build/emptyorch*.exe
+        - electron_build/dist/emptyorch-*.AppImage
+        - electron_build/dist/emptyorch*.exe
       on:
         tags: true
         repo: kubilus1/emptyorchestra

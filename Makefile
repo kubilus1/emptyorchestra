@@ -42,10 +42,10 @@ electronbuild_win:
 	docker build -t electronbuild_win -f ./electron_build/Dockerfile.win .
 
 win_pkg: clean dist/eo.exe electronbuild_win
-	docker run --rm -it -w /src -v `pwd`:/src electronbuild_win /bin/bash -c "cd electron_build && electron-builder -w -c.extraMetadata.version=$(VER)"
+	docker run --rm -it -w /src -v `pwd`:/src electronbuild_win /bin/bash -c "cd electron_build && npm install && electron-builder -w -c.extraMetadata.version=$(VER)"
 
 tux_pkg: clean dist/emptyorch_min_amd64_linux electronbuild
-	docker run --rm -it -w /src -v `pwd`:/src electronbuild /bin/bash -c "cd electron_build && electron-builder -l -c.extraMetadata.version=$(VER)"
+	docker run --rm -it -w /src -v `pwd`:/src electronbuild /bin/bash -c "cd electron_build && npm install && electron-builder -l -c.extraMetadata.version=$(VER)"
 
 dev_run:
 	cd electron_build && DEVMODE=1 npm start
