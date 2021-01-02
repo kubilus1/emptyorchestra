@@ -12,18 +12,18 @@
   "author": "Matt Kubilus",
   "license": "BSD",
   "build": {
-      "extraResources": [
-          {
-            "from": "../dist/",
-            "to": "dist",
-            "filter": [
-                "emptyorch_*"
-            ]
-          }
-      ]
+    "extraResources": [
+      {
+        "from": "../dist/",
+        "to": "dist",
+        "filter": [
+          "emptyorch_*"
+        ]
+      }
+    ]
   },
   "linux": {
-      "icon": "../mic1.ico"
+    "icon": "../mic1.ico"
   },
   "dependencies": {
     "request": "^2.88.2",
