@@ -577,11 +577,17 @@ def karaoke():
     #song_data = song_q.get()
     IP = get_ip()
     tracks = os.listdir(os.path.join(PKGDIR, 'static', 'tracks'))
+    extratracks = [
+        os.path.join('extratracks', x) for x in os.listdir(os.path.join(
+            PKGDIR, 'static', 'tracks', 'extratracks'))
+    ]
     images = os.listdir(os.path.join(PKGDIR, 'static', 'images'))
     next_images = [ x for x in images if x.startswith('next_') ]
     backgrounds = [ x for x in images if x.startswith('bg_') ]
     kj_images = [ x for x in images if x.startswith('kj_') ]
 
+    tracks.extend(extratracks)
+    
     startup = request.cookies.get('startup', 'true')
 
     print("My ip: %s" % IP)
@@ -1230,12 +1236,15 @@ def run_it():
 @app.route('/find_songs/')
 #@local_only
 def get_folder():
-    global control_id
-    kfolder = control_id.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
-            allow_multiple=False, file_types=())
+    #global control_id
+    #kfolder = control_id.create_file_dialog(dialog_type=webview.FOLDER_DIALOG,
+    #        allow_multiple=False, file_types=())
 
-    findKaraokes(kfolder[0])
-    control_id.load_url("http://127.0.0.1:5000/control")
+    #findKaraokes(kfolder[0])
+    #control_id.load_url("http://127.0.0.1:5000/control")
+    folder = request.args.get('folder')
+    if folder:
+        findKaraokes(folder)
     return json.dumps({"ret":"ok"})
 
 def check_health():
@@ -1292,7 +1301,7 @@ def start_embedded():
         if MSWIN:
             webview.start(debug=True)
         else:
-            webview.start(gui='qt', debug=True)
+            webview.start(gui='gtk', debug=True)
         print("Main window exited.")
     except KeyboardInterrupt:
         print("Exiting")
@@ -1310,8 +1319,19 @@ def start_local_browser():
     control_window.open('http://127.0.0.1:5000/control', new=1)
 
     main_window = webbrowser.get()
-    main_window.open('http://127.0.0.1:5000/karaoke', new=0)
+    main_window.open('http://127.0.0.1:5000/karaoke', new=1)
 
+    try:
+        run_it()
+        print("Main window exited.")
+    except KeyboardInterrupt:
+        print("Exiting")
+    finally:
+        global RUNNING
+        RUNNING = False
+        db.close()
+
+def start_headless():
     try:
         run_it()
         print("Main window exited.")
@@ -1343,6 +1363,16 @@ def main():
     if not os.path.isdir(os.path.join(EODIR, "cache")):
         os.mkdir(os.path.join(EODIR, "cache"))
 
+    if not os.path.isdir(os.path.join(EODIR, "extratracks")):
+        os.mkdir(os.path.join(EODIR, "extratracks"))
+   
+    if not os.path.exists(os.path.join(PKGDIR, 'static', 'tracks', 'extratracks')):
+        os.symlink(
+            os.path.join(EODIR, 'extratracks'),
+            os.path.join(PKGDIR, 'static', 'tracks', 'extratracks'),
+            target_is_directory=True
+        )
+   
     with open(conf_path) as h:
         conf = yaml.load(h)
 
@@ -1353,8 +1383,12 @@ def main():
     song_qs = collections.OrderedDict()
     users_q = collections.OrderedDict()
 
-    #start_local_browser()
-    start_embedded()
+    if os.environ.get('EO_HEADLESS'):
+        start_headless()
+    elif os.environ.get('EO_EMBEDDED'):
+        start_embedded()
+    else:
+        start_local_browser()
 
 if __name__ == "__main__":
     main()

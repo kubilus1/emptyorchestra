@@ -1,0 +1,38 @@
+{
+  "name": "emptyorch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "icon": "../mic1.ico",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Matt Kubilus",
+  "license": "BSD",
+  "build": {
+      "extraResources": [
+          {
+            "from": "../dist/",
+            "to": "dist",
+            "filter": [
+                "emptyorch_*"
+            ]
+          }
+      ]
+  },
+  "linux": {
+      "icon": "../mic1.ico"
+  },
+  "dependencies": {
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6"
+  },
+  "devDependencies": {
+    "electron": "^11.1.1",
+    "electron-packager": "^15.2.0",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6"
+  }
+}
