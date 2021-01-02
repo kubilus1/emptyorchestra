@@ -3,5 +3,5 @@ show_downloads: true
 show_releases: true
 title: Emptyorchestra
 github:
-  win_url: https://github.com/kubilus1/emptyorchestra/releases/latest/download/emptyorch.exe
-  linux_url: https://github.com/kubilus1/emptyorchestra/releases/latest/download/emptyorch_amd64_linux
+  win_url: https://github.com/kubilus1/emptyorchestra/releases/latest/download/emptyorch_win.exe
+  linux_url: https://github.com/kubilus1/emptyorchestra/releases/latest/download/emptyorch_linux.AppImage
