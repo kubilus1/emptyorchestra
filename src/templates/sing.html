@@ -61,6 +61,19 @@ function loadData() {
     $('#data_web').html(web_results);
 }
 
+function getfolder(e) {
+	var files = e.target.files;
+	var path = files[0].webkitRelativePath;
+	var Folder = path.split("/");
+	//alert(Folder[0]);
+    $.ajax({
+        type: "GET",
+        data: { 'folder': Folder[0] },
+        url: "{{ url_for('get_folder') }}",
+        async: true
+    });
+}
+
 </script>
 {% endblock %}
 
@@ -110,8 +123,9 @@ $.post(
 <button onclick="restart()">Restart</button>
 <button onclick="skip()">Skip</button>
 <button onclick="playpause()">Play/Pause</button>
-<button onclick="findsongs()">Find songs</button>
+<button onclick="$('#flup').click();">Find songs</button>
 <button onclick="fullscreen()">Fullscreen</button>
+<input style="display:none;" type="file" id="flup" onchange="getfolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
 {% endif %}
 
 <div id="user_data"> </div>
@@ -138,4 +152,5 @@ $.post(
             search();		
         }
     });
+
 {% endblock %}

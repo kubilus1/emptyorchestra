@@ -1,4 +1,6 @@
-packages: dist/emptyorch_amd64_linux dist/eo.exe
+VER?=0.0.0
+
+packages: tux_pkg win_pkg
 
 nuitka_img:
 	docker build -t nuitka -f Dockerfile.nuitka .
@@ -10,10 +12,10 @@ enter: pyinst_img
 	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash
 
 dist/emptyorch_amd64_linux: dist pyinst_img
-	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 -m pip install -U pip && python3 setup.py install && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux.spec"
+	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 -m pip install -U pip && python3 setup.py install && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux_min.spec"
 
 dist/emptyorch_min_amd64_linux: dist pyinst_img
-	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 -m pip install -U pip && python3 setup.py install && python3 -m pip install -r all_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux_min.spec"
+	docker run -w /src --rm -it -v `pwd`:/src pyinstaller /bin/bash -c "python3 -m pip install -U pip && python3 setup.py install && python3 -m pip install -r min_reqs.txt && pyinstaller --clean --workpath /tmp eo_linux_min.spec"
 
 rust_img:
 	docker build -t rust -f Dockerfile.rust .
@@ -31,6 +33,22 @@ dist/eo.pex: dist pex_img
 dist/eo.exe: dist
 	docker run --rm -it -v `pwd`:/src cdrx/pyinstaller-windows:python3 "python setup.py install && pip install -r requirements.txt && pyinstaller --clean --workpath /tmp eo_win.spec"
 	#docker run --rm -it -v `pwd`:/src cdrx/pyinstaller-windows:python3 "python setup.py install && pip install -r requirements.txt && cp ./hooks/hook-webview.py /wine/drive_c/Python37/Lib/site-packages/PyInstaller/hooks/hook-webview.py && pyinstaller --clean --workpath /tmp eo_win.spec"
+
+
+electronbuild:
+	docker build -t electronbuild -f ./electron_build/Dockerfile .
+
+electronbuild_win:
+	docker build -t electronbuild_win -f ./electron_build/Dockerfile.win .
+
+win_pkg: clean dist/eo.exe electronbuild_win
+	docker run --rm -it -w /src -v `pwd`:/src electronbuild_win /bin/bash -c "cd electron_build && electron-builder -w -c.extraMetadata.version=$(VER)"
+
+tux_pkg: clean dist/emptyorch_min_amd64_linux electronbuild
+	docker run --rm -it -w /src -v `pwd`:/src electronbuild /bin/bash -c "cd electron_build && electron-builder -l -c.extraMetadata.version=$(VER)"
+
+dev_run:
+	cd electron_build && DEVMODE=1 npm start
 
 dist:
 	mkdir $@

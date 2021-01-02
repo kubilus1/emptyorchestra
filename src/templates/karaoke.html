@@ -108,6 +108,7 @@ function onLoad(data) {
     //alert("Hello!");
     //open_control();
 
+    sessionStorage.setItem('splash', 'true');
     if(sessionStorage.getItem('splash') !== 'true') {
         $('#splashscreen').show();
         sessionStorage.setItem('splash', 'true');

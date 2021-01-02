@@ -21,7 +21,7 @@ jobs:
   - stage: release to github
     script: 
      - echo "Deploying to github..."
-     - make packages
+     - VER=$TRAVIS_TAG make packages
     if: tag IS present
     deploy:
       provider: releases
@@ -29,7 +29,8 @@ jobs:
       skip_cleanup: true
       file_glob: true
       file:
-        - dist/emptyorch_*
+        - dist/electron_build/emptyorch-*.AppImage
+        - dist/electron_build/emptyorch*.exe
       on:
         tags: true
         repo: kubilus1/emptyorchestra

@@ -5,8 +5,11 @@ RUN python3 -m pip install -U pip
 RUN python3 -m pip install pyinstaller
 
 RUN apt-get update && apt-get install -y \
-    libyaml-dev libgl1-mesa-dri libpng16-16 libssh-gcrypt-4 \
-    libegl-mesa0 libgl1-mesa-glx
+    libyaml-dev
+
+#RUN apt-get update && apt-get install -y \
+#    libyaml-dev libgl1-mesa-dri libpng16-16 libssh-gcrypt-4 \
+#    libegl-mesa0 libgl1-mesa-glx
 
 #RUN apt-get update && apt-get install -y \
 #    libpng16-16 libssh-gcrypt-4 python3-gi \
