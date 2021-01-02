@@ -30,8 +30,8 @@ jobs:
       skip_cleanup: true
       file_glob: true
       file:
-        - electron_build/dist/emptyorch-*.AppImage
-        - electron_build/dist/emptyorch*.exe
+        - electron_build/dist/emptyorch_linux.AppImage
+        - electron_build/dist/emptyorch_win.exe
       on:
         tags: true
         repo: kubilus1/emptyorchestra

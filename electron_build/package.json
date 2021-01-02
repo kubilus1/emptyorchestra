@@ -12,6 +12,7 @@
   "author": "Matt Kubilus",
   "license": "BSD",
   "build": {
+    "artifactName": "emptyorch_${os}.${ext}",
     "extraResources": [
       {
         "from": "../dist/",
